@@ -32,6 +32,7 @@ struct solution {
     int price;
     int n_L3;
     int n_L4;
+    int n_empty;
 };
 
 /**
@@ -81,15 +82,30 @@ public:
      * Compute the price of solution.
      * @param L3 number of L3
      * @param L4 number of L4
-     * @param q number of empty field
+     * @param n_empty number of empty field
      * @return price of the solution
      */
-    static int computePrice(int L3, int L4, int q){
-        return 2*L3+3*L4-6*q;
+    static int computePrice(int L3, int L4, int n_empty){
+        return 2*L3+3*L4-6*n_empty;
+    }
+
+    /**
+     * Count the maximal price for the "number" of unsolved squares.
+     *
+     * @param number number of unsolved squares
+     * @return returns the maximal price for the "number" of unsolved squares
+     */
+    static int eval_pol(int number){
+        int mod=number%5;
+        if (mod==0) return (number/5)*3;
+        else if (mod==1) return ((number-16)/5)*3+4*2;
+        else if (mod==2) return ((number-12)/5)*3+3*2;
+        else if (mod==3) return ((number-8)/5)*3+2*2;
+        else return ((number-4)/5)*3+2;
     }
 
     void solveMap() {
-        cout << "Solve the problem" << this->countEmptyCoords(&this->ground) << endl;
+        cout << "Solve the problem" << endl;
     }
 
     /**
@@ -152,5 +168,6 @@ int main() {
     problem->solveMap();
     problem->findEmptyCoords();
     problem->printSolution();
+    cout << problem->eval_pol(9*9);
     delete problem;
 }
