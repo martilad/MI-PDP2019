@@ -3,30 +3,30 @@
 #include <vector>
 #include <iomanip>
 #include <stack>
+#include <queue>
 
 using namespace std;
 
 enum possibility {
     no = 0,
-    l31 = 1,
-    l32 = 2,
-    l33 = 3,
-    l34 = 4,
-    l35 = 5,
-    l36 = 6,
-    l37 = 7,
-    l38 = 8,
-    l41 = 9,
-    l42 = 10,
-    l43 = 11,
-    l44 = 12,
-    l45 = 13,
-    l46 = 14,
-    l47 = 15,
-    l48 = 16,
+    l41 = 1,
+    l42 = 2,
+    l43 = 3,
+    l44 = 4,
+    l45 = 5,
+    l46 = 6,
+    l47 = 7,
+    l48 = 8,
+    l31 = 9,
+    l32 = 10,
+    l33 = 11,
+    l34 = 12,
+    l35 = 13,
+    l36 = 14,
+    l37 = 15,
+    l38 = 16,
     empty = 17
 };
-const int PRINT_NUMBERS = 2;
 
 /**
  * Coordinate with position.
@@ -38,18 +38,41 @@ struct cord {
         this->y = y;
     }
 
-    cord (const cord& tmp){
+    cord(const cord &tmp) {
         this->x = tmp.x;
         this->y = tmp.y;
     }
 
-    cord(){
+    cord() {
 
     }
 
     int x;
     int y;
 };
+
+
+const std::vector <cord> L31 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(2, 0)};
+const std::vector <cord> L32 = {cord(0, 0), cord(1, 0), cord(1, 1), cord(1, 2)};
+const std::vector <cord> L33 = {cord(0, 0), cord(0, 1), cord(0, 2), cord(1, 2)};
+const std::vector <cord> L34 = {cord(2, -1), cord(0, 0), cord(1, 0), cord(2, 0)};
+const std::vector <cord> L35 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(0, 2)};
+const std::vector <cord> L36 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(2, 1)};
+const std::vector <cord> L37 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1)};
+const std::vector <cord> L38 = {cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
+
+const std::vector <cord> L41 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(2, 0), cord(3, 0)};
+const std::vector <cord> L42 = {cord(0, 0), cord(1, 0), cord(1, 1), cord(1, 2), cord(1, 3)};
+const std::vector <cord> L43 = {cord(0, 0), cord(0, 1), cord(0, 2), cord(0, 3), cord(1, 3)};
+const std::vector <cord> L44 = {cord(3, -1), cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0)};
+const std::vector <cord> L45 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(0, 2), cord(0, 3)};
+const std::vector <cord> L46 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0), cord(3, 1)};
+const std::vector <cord> L47 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1), cord(3, 1)};
+const std::vector <cord> L48 = {cord(1, -3), cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
+
+
+const int PRINT_NUMBERS = 2;
+
 
 /**
  * One find solution of map, the best for now.
@@ -64,7 +87,7 @@ struct solution {
 
 struct stackItem {
 
-    stackItem(cord coordinates, int id, int cnt){
+    stackItem(cord coordinates, int id, int cnt) {
         this->coordinates = coordinates;
         this->id = id;
         this->cnt = cnt;
@@ -144,49 +167,124 @@ public:
         else return ((number - 4) / 5) * 3 + 2;
     }
 
-    cord nextFree(vector <vector<int>> *array, int x, int y){
+    cord nextFree(vector <vector<int>> *array, int x, int y) {
         do {
             x = x + 1;
-            y = y + x/this->n;
+            y = y + x / this->n;
             x = x % this->n;
-            if (y >= this->m){
+            if (y >= this->m) {
                 x = -1;
                 y = -1;
+                break;
             }
-        } while (x != -1 || (y == -1) ? false : (*array)[y][x] != 0);
+        } while ((*array)[y][x] != 0);
         return cord(x, y);
     }
 
+    int addValueToMap(int id, int oldVal, int newVal, int x, int y) {
+        int tmpX, tmpY;
+        vector <cord> v;
+        switch (id) {
+            case l31:
+                v = L31;
+                break;
+            case l32:
+                v = L32;
+                break;
+            case l33:
+                v = L33;
+                break;
+            case l34:
+                v = L34;
+                break;
+            case l35:
+                v = L35;
+                break;
+            case l36:
+                v = L36;
+                break;
+            case l37:
+                v = L37;
+                break;
+            case l38:
+                v = L38;
+                break;
+            case l41:
+                v = L41;
+                break;
+            case l42:
+                v = L42;
+                break;
+            case l43:
+                v = L43;
+                break;
+            case l44:
+                v = L44;
+                break;
+            case l45:
+                v = L45;
+                break;
+            case l46:
+                v = L46;
+                break;
+            case l47:
+                v = L47;
+                break;
+            case l48:
+                v = L48;
+                break;
+            case empty:
+                return 1;
+        }
+        for (unsigned int i = 0; i < v.size(); i++) {
+            tmpX = x + v[i].x;
+            tmpY = y + v[i].y;
+            if (tmpX >= this->n || tmpY >= this->m || tmpX < 0 || tmpY < 0) return -1;
+            if (this->ground[tmpY][tmpX] != oldVal) return -1;
+        }
+        for (unsigned int i = 0; i < v.size(); i++) {
+            this->ground[y + v[i].y][x + v[i].x] = newVal;
+        }
+        return 1;
+    }
+
     void solveMap() {
-        stack<stackItem> iterationStack;
+        stack <stackItem> iterationStack;
         int nEmpty = this->countEmptyCoords(&this->ground);
         int L3 = 0;
         int L4 = 0;
-        int cnt = 1;
-        iterationStack.push(stackItem(this->nextFree(&this->ground, 0, 0), no, cnt));
-        while (iterationStack.size() > 0){
+        iterationStack.push(stackItem(this->nextFree(&this->ground, 0, 0), no, 1));
+        while (iterationStack.size() > 0) {
             stackItem tmp = iterationStack.top();
             iterationStack.pop();
-            //cout << tmp.coordinates.x << " " << tmp.coordinates.y << " " << tmp.id << " " << tmp.cnt << endl;
-            if (tmp.id == empty || tmp.coordinates.x == -1 || tmp.coordinates.y == -1){
+
+            if (tmp.id == empty || tmp.coordinates.x == -1 || tmp.coordinates.y == -1) {
                 continue;
             }
-            if (tmp.id > no){
-                //cout << "need remove" << endl;
+            if (tmp.id > no) {
+                this->addValueToMap(tmp.id, tmp.cnt, 0, tmp.coordinates.x, tmp.coordinates.y);
             }
-            if (tmp.coordinates.x == 4 && tmp.coordinates.y == 12){
-                cout << tmp.id << endl;
+            while (1) {
+                int ret = this->addValueToMap(++tmp.id, 0, tmp.cnt, tmp.coordinates.x, tmp.coordinates.y);
+                if (tmp.id == empty || ret != -1) break;
             }
-            //cout << "need push next"  << empty << endl;
-            iterationStack.push(stackItem(cord(tmp.coordinates.x, tmp.coordinates.y), ++tmp.id, tmp.cnt++));
+            //TODO: counter update only if add some shit on map
+            iterationStack.push(stackItem(cord(tmp.coordinates.x, tmp.coordinates.y), tmp.id, tmp.cnt++));
             cord next = this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y);
-            if (next.x != -1 && next.y != -1){
-                iterationStack.push(stackItem(this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y), no, cnt));
+
+
+            if (next.x != -1 && next.y != -1) {
+                iterationStack.push(
+                        stackItem(this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y), no, tmp.cnt));
             }
 
-            // price check and save the best
+
+            this->printSolution();
+
+            // TODO: kill branch which can not beat the best. branch and bound.
+            // TODO: price check and save the best
         }
-        cout << "Solve the problem" << L3 << " " << L4<< " " << nEmpty << endl;
+        cout << "Solve the problem" << L3 << " " << L4 << " " << nEmpty << endl;
     }
 
     /**
@@ -249,6 +347,5 @@ int main() {
     problem->solveMap();
     problem->findEmptyCoords();
     problem->printSolution();
-    cout << problem->eval_pol(9 * 9);
     delete problem;
 }
