@@ -51,25 +51,25 @@ struct cord {
     int y;
 };
 
+const vector <cord> L31 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(2, 0)};
+const vector <cord> L32 = {cord(0, 0), cord(1, 0), cord(1, 1), cord(1, 2)};
+const vector <cord> L33 = {cord(0, 0), cord(0, 1), cord(0, 2), cord(1, 2)};
+const vector <cord> L34 = {cord(2, -1), cord(0, 0), cord(1, 0), cord(2, 0)};
+const vector <cord> L35 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(0, 2)};
+const vector <cord> L36 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(2, 1)};
+const vector <cord> L37 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1)};
+const vector <cord> L38 = {cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
 
-const std::vector <cord> L31 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(2, 0)};
-const std::vector <cord> L32 = {cord(0, 0), cord(1, 0), cord(1, 1), cord(1, 2)};
-const std::vector <cord> L33 = {cord(0, 0), cord(0, 1), cord(0, 2), cord(1, 2)};
-const std::vector <cord> L34 = {cord(2, -1), cord(0, 0), cord(1, 0), cord(2, 0)};
-const std::vector <cord> L35 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(0, 2)};
-const std::vector <cord> L36 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(2, 1)};
-const std::vector <cord> L37 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1)};
-const std::vector <cord> L38 = {cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
+const vector <cord> L41 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(2, 0), cord(3, 0)};
+const vector <cord> L42 = {cord(0, 0), cord(1, 0), cord(1, 1), cord(1, 2), cord(1, 3)};
+const vector <cord> L43 = {cord(0, 0), cord(0, 1), cord(0, 2), cord(0, 3), cord(1, 3)};
+const vector <cord> L44 = {cord(3, -1), cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0)};
+const vector <cord> L45 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(0, 2), cord(0, 3)};
+const vector <cord> L46 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0), cord(3, 1)};
+const vector <cord> L47 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1), cord(3, 1)};
+const vector <cord> L48 = {cord(1, -3), cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
 
-const std::vector <cord> L41 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(2, 0), cord(3, 0)};
-const std::vector <cord> L42 = {cord(0, 0), cord(1, 0), cord(1, 1), cord(1, 2), cord(1, 3)};
-const std::vector <cord> L43 = {cord(0, 0), cord(0, 1), cord(0, 2), cord(0, 3), cord(1, 3)};
-const std::vector <cord> L44 = {cord(3, -1), cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0)};
-const std::vector <cord> L45 = {cord(0, 0), cord(1, 0), cord(0, 1), cord(0, 2), cord(0, 3)};
-const std::vector <cord> L46 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0), cord(3, 1)};
-const std::vector <cord> L47 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1), cord(3, 1)};
-const std::vector <cord> L48 = {cord(1, -3), cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
-
+const vector<vector<cord>> items = {{}, L31, L32, L33, L34, L35, L36, L37, L38, L41, L42, L43, L44, L45, L46, L47, L48};
 
 const int PRINT_NUMBERS = 2;
 
@@ -183,59 +183,8 @@ public:
 
     int addValueToMap(int id, int oldVal, int newVal, int x, int y) {
         int tmpX, tmpY;
-        vector <cord> v;
-        switch (id) {
-            case l31:
-                v = L31;
-                break;
-            case l32:
-                v = L32;
-                break;
-            case l33:
-                v = L33;
-                break;
-            case l34:
-                v = L34;
-                break;
-            case l35:
-                v = L35;
-                break;
-            case l36:
-                v = L36;
-                break;
-            case l37:
-                v = L37;
-                break;
-            case l38:
-                v = L38;
-                break;
-            case l41:
-                v = L41;
-                break;
-            case l42:
-                v = L42;
-                break;
-            case l43:
-                v = L43;
-                break;
-            case l44:
-                v = L44;
-                break;
-            case l45:
-                v = L45;
-                break;
-            case l46:
-                v = L46;
-                break;
-            case l47:
-                v = L47;
-                break;
-            case l48:
-                v = L48;
-                break;
-            case empty:
-                return 1;
-        }
+        if (id == empty) return 1;
+        vector <cord> v = items[id];
         for (unsigned int i = 0; i < v.size(); i++) {
             tmpX = x + v[i].x;
             tmpY = y + v[i].y;
@@ -249,30 +198,37 @@ public:
     }
 
     void solveMap() {
+        // iteration stack for operations
         stack <stackItem> iterationStack;
         int nEmpty = this->countEmptyCoords(&this->ground);
         int L3 = 0;
         int L4 = 0;
+        // add first possible place for add some item
         iterationStack.push(stackItem(this->nextFree(&this->ground, 0, 0), no, 1));
         while (iterationStack.size() > 0) {
             stackItem tmp = iterationStack.top();
             iterationStack.pop();
 
+            // if empty go back to next (back) position with some, after empty it is no possibility there
             if (tmp.id == empty || tmp.coordinates.x == -1 || tmp.coordinates.y == -1) {
                 continue;
             }
+            // if there some item remove it
             if (tmp.id > no) {
                 this->addValueToMap(tmp.id, tmp.cnt, 0, tmp.coordinates.x, tmp.coordinates.y);
             }
+            // add some next item on position
             while (1) {
                 int ret = this->addValueToMap(++tmp.id, 0, tmp.cnt, tmp.coordinates.x, tmp.coordinates.y);
                 if (tmp.id == empty || ret != -1) break;
             }
-            //TODO: counter update only if add some shit on map
-            iterationStack.push(stackItem(cord(tmp.coordinates.x, tmp.coordinates.y), tmp.id, tmp.cnt++));
+
+            // add placed item to iteration stack
+            iterationStack.push(stackItem(cord(tmp.coordinates.x, tmp.coordinates.y), tmp.id, tmp.cnt));
+            if (tmp.id < empty) tmp.cnt++;
             cord next = this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y);
 
-
+            // add new free field to check possibility
             if (next.x != -1 && next.y != -1) {
                 iterationStack.push(
                         stackItem(this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y), no, tmp.cnt));
