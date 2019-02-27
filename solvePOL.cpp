@@ -7,6 +7,8 @@
 
 using namespace std;
 
+const int PRINT_NUMBERS = 2;
+
 enum possibility {
     no = 0,
     l41 = 1,
@@ -69,21 +71,134 @@ const vector <cord> L46 = {cord(0, 0), cord(1, 0), cord(2, 0), cord(3, 0), cord(
 const vector <cord> L47 = {cord(0, 0), cord(0, 1), cord(1, 1), cord(2, 1), cord(3, 1)};
 const vector <cord> L48 = {cord(1, -3), cord(1, -2), cord(1, -1), cord(1, 0), cord(0, 0)};
 
-const vector<vector<cord>> items = {{}, L31, L32, L33, L34, L35, L36, L37, L38, L41, L42, L43, L44, L45, L46, L47, L48};
+const vector<vector<cord>> items = {{}, L41, L42, L43, L44, L45, L46, L47, L48, L31, L32, L33, L34, L35, L36, L37, L38};
 
-const int PRINT_NUMBERS = 2;
 
+
+
+
+static cord nextFree(vector <vector<int>> *array, int m, int n, int x, int y) {
+    do {
+        x = x + 1;
+        y = y + x / n;
+        x = x % n;
+        if (y >= m) {
+            x = -1;
+            y = -1;
+            break;
+        }
+    } while ((*array)[y][x] != 0);
+    return cord(x, y);
+}
+
+static int addValueToMap(vector <vector<int>> *array, int m, int n, int id, int oldVal, int newVal, int x, int y) {
+    int tmpX, tmpY;
+    if (id == empty) return 1;
+    vector <cord> v = items[id];
+    for (unsigned int i = 0; i < v.size(); i++) {
+        tmpX = x + v[i].x;
+        tmpY = y + v[i].y;
+        if (tmpX >= n || tmpY >= m || tmpX < 0 || tmpY < 0) return -1;
+        if ((*array)[tmpY][tmpX] != oldVal) return -1;
+    }
+    for (unsigned int i = 0; i < v.size(); i++) {
+        (*array)[y + v[i].y][x + v[i].x] = newVal;
+    }
+    return 1;
+}
+
+/**
+ * Count the maximal price for the "number" of unsolved squares.
+ *
+ * @param number number of unsolved squares
+ * @return returns the maximal price for the "number" of unsolved squares
+ */
+static int eval_pol(int number) {
+    int mod = number % 5;
+    if (mod == 0) return (number / 5) * 3;
+    else if (mod == 1) return ((number - 16) / 5) * 3 + 4 * 2;
+    else if (mod == 2) return ((number - 12) / 5) * 3 + 3 * 2;
+    else if (mod == 3) return ((number - 8) / 5) * 3 + 2 * 2;
+    else return ((number - 4) / 5) * 3 + 2;
+}
 
 /**
  * One find solution of map, the best for now.
  */
 struct solution {
+
+    /**
+     * Print solution with 2D array and parameter of solution.
+     */
+    void printSolution() {
+        this->computePrice();
+        cout << "Max price: " << this->price << endl;
+        cout << "Number of L3: " << this->nL3 << endl;
+        cout << "Number of L4: " << this->nL4 << endl;
+        cout << "Number of not fill: " << this->nEmpty << endl;
+        /*for (auto &cord : this->not_cords) {
+            cout << cord.x << " " << cord.y << endl;
+        }*/
+
+        for (int i = 0; i < this->m; i++) {
+            for (int j = 0; j < this->n - 1; j++) {
+                cout << setw(PRINT_NUMBERS) << setfill(' ')
+                     << ((this->ground[i][j] == -1) ? "Z" : (this->ground[i][j] == 0) ? "-" : to_string(
+                             this->ground[i][j])) << " ";
+            }
+            cout << setw(PRINT_NUMBERS) << setfill(' ')
+                 << ((this->ground[i][this->n - 1] == -1) ? "Z" : (this->ground[i][this->n - 1] == 0) ? "-" : to_string(
+                         this->ground[i][this->n - 1])) << endl;
+        }
+    }
+
+    /**
+     * Count and save coords of the empty positions in map.
+     */
+    void findEmptyCoords() {
+        notCords = vector<cord>();
+        int cnt = 0;
+        for (int i = 0; i < this->m; i++)
+            for (int j = 0; j < this->n; j++)
+                if (this->ground[i][j] == 0) {
+                    this->notCords.push_back(cord(j, i));
+                    cnt++;
+                }
+        this->nEmpty = cnt;
+    }
+
+    /**
+    * Compute the price of solution.
+    */
+    void computePrice() {
+        this->countEmptyCoords();
+        this->price =  2 * this->nL3 + 3 * this->nL4 - 6 * this->nEmpty;
+    }
+
+    /**
+     * Count number of empty fields.
+     */
+     void countEmptyCoords() {
+        int cnt = 0;
+        for (unsigned int i = 0; i < this->ground.size(); i++)
+            for (unsigned int j = 0; j < this->ground[i].size(); j++)
+                if (this->ground[i][j] == 0)
+                    cnt++;
+        this->nEmpty = cnt;
+    }
+
+    int m;
+    int n;
     vector <vector<int>> ground;
     int price;
-    int n_L3;
-    int n_L4;
-    int n_empty;
+    int nL3;
+    int nL4;
+    int nEmpty;
+    vector <cord> notCords;
 };
+
+
+
 
 struct stackItem {
 
@@ -102,109 +217,29 @@ struct stackItem {
  * Structure to save one solution with map and needed parameters.
  */
 class POL {
+    solution workSolution;
+    solution bestSolution;
     int m;
     int n;
-    vector <vector<int>> ground;
-    int price;
-    int n_L3;
-    int n_L4;
-    int n_not;
-    vector <cord> not_cords;
-
 public:
 
-    /**
-     * Count and save coords of the empty positions in map.
-     */
-    void findEmptyCoords() {
-        int cnt = 0;
-        for (int i = 0; i < this->m; i++)
-            for (int j = 0; j < this->n; j++)
-                if (this->ground[i][j] == 0) {
-                    this->not_cords.push_back(cord(j, i));
-                    cnt++;
-                }
-        this->n_not = cnt;
-    }
-
-    /**
-     * Count number of empty fields.
-     * @param array array where find the empty -> value == 0
-     * @return number of emtpy fields
-     */
-    static int countEmptyCoords(vector <vector<int>> *array) {
-        int cnt = 0;
-        for (unsigned int i = 0; i < (*array).size(); i++)
-            for (unsigned int j = 0; j < (*array)[i].size(); j++)
-                if ((*array)[i][j] == 0)
-                    cnt++;
-        return cnt;
-    }
-
-    /**
-     * Compute the price of solution.
-     * @param L3 number of L3
-     * @param L4 number of L4
-     * @param n_empty number of empty field
-     * @return price of the solution
-     */
-    static int computePrice(int L3, int L4, int n_empty) {
-        return 2 * L3 + 3 * L4 - 6 * n_empty;
-    }
-
-    /**
-     * Count the maximal price for the "number" of unsolved squares.
-     *
-     * @param number number of unsolved squares
-     * @return returns the maximal price for the "number" of unsolved squares
-     */
-    static int eval_pol(int number) {
-        int mod = number % 5;
-        if (mod == 0) return (number / 5) * 3;
-        else if (mod == 1) return ((number - 16) / 5) * 3 + 4 * 2;
-        else if (mod == 2) return ((number - 12) / 5) * 3 + 3 * 2;
-        else if (mod == 3) return ((number - 8) / 5) * 3 + 2 * 2;
-        else return ((number - 4) / 5) * 3 + 2;
-    }
-
-    cord nextFree(vector <vector<int>> *array, int x, int y) {
-        do {
-            x = x + 1;
-            y = y + x / this->n;
-            x = x % this->n;
-            if (y >= this->m) {
-                x = -1;
-                y = -1;
-                break;
-            }
-        } while ((*array)[y][x] != 0);
-        return cord(x, y);
-    }
-
-    int addValueToMap(int id, int oldVal, int newVal, int x, int y) {
-        int tmpX, tmpY;
-        if (id == empty) return 1;
-        vector <cord> v = items[id];
-        for (unsigned int i = 0; i < v.size(); i++) {
-            tmpX = x + v[i].x;
-            tmpY = y + v[i].y;
-            if (tmpX >= this->n || tmpY >= this->m || tmpX < 0 || tmpY < 0) return -1;
-            if (this->ground[tmpY][tmpX] != oldVal) return -1;
-        }
-        for (unsigned int i = 0; i < v.size(); i++) {
-            this->ground[y + v[i].y][x + v[i].x] = newVal;
-        }
-        return 1;
+    solution getBest(){
+        return this->bestSolution;
     }
 
     void solveMap() {
         // iteration stack for operations
+        int cnt = 0;
         stack <stackItem> iterationStack;
-        int nEmpty = this->countEmptyCoords(&this->ground);
-        int L3 = 0;
-        int L4 = 0;
+        this->workSolution.countEmptyCoords();
+        this->workSolution.nL3 = 0;
+        this->workSolution.nL4 = 0;
+
+        this->bestSolution = this->workSolution;
+        this->bestSolution.computePrice();
+
         // add first possible place for add some item
-        iterationStack.push(stackItem(this->nextFree(&this->ground, 0, 0), no, 1));
+        iterationStack.push(stackItem(nextFree(&this->workSolution.ground, this->m, this->n, 0, 0), no, 1));
         while (iterationStack.size() > 0) {
             stackItem tmp = iterationStack.top();
             iterationStack.pop();
@@ -215,32 +250,51 @@ public:
             }
             // if there some item remove it
             if (tmp.id > no) {
-                this->addValueToMap(tmp.id, tmp.cnt, 0, tmp.coordinates.x, tmp.coordinates.y);
+                addValueToMap(&this->workSolution.ground, this->m, this->n, tmp.id, tmp.cnt, 0, tmp.coordinates.x, tmp.coordinates.y);
+                if (tmp.id >= l41 && tmp.id <= l48)this->workSolution.nL4 -= 1;
+                if (tmp.id >= l31 && tmp.id <= l38)this->workSolution.nL3 -= 1;
+
+                //TODO: if there is item remove it
             }
             // add some next item on position
             while (1) {
-                int ret = this->addValueToMap(++tmp.id, 0, tmp.cnt, tmp.coordinates.x, tmp.coordinates.y);
-                if (tmp.id == empty || ret != -1) break;
+                int ret = addValueToMap(&this->workSolution.ground, this->m, this->n, ++tmp.id, 0, tmp.cnt, tmp.coordinates.x, tmp.coordinates.y);
+                if (tmp.id == empty || ret != -1){
+                    if (tmp.id >= l41 && tmp.id <= l48)this->workSolution.nL4 += 1;
+                    if (tmp.id >= l31 && tmp.id <= l38)this->workSolution.nL3 += 1;
+                    //TODO: some add count the filds
+                    break;
+                }
+
             }
 
             // add placed item to iteration stack
             iterationStack.push(stackItem(cord(tmp.coordinates.x, tmp.coordinates.y), tmp.id, tmp.cnt));
             if (tmp.id < empty) tmp.cnt++;
-            cord next = this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y);
+            cord next = nextFree(&this->workSolution.ground, this->m, this->n, tmp.coordinates.x, tmp.coordinates.y);
 
             // add new free field to check possibility
             if (next.x != -1 && next.y != -1) {
                 iterationStack.push(
-                        stackItem(this->nextFree(&this->ground, tmp.coordinates.x, tmp.coordinates.y), no, tmp.cnt));
+                        stackItem(nextFree(&this->workSolution.ground, this->m, this->n, tmp.coordinates.x, tmp.coordinates.y), no, tmp.cnt));
             }
 
+            // TODO: price check and save the best
+            /*cout  << " -------------BEST------------------- " << endl;
+            this->bestSolution.printSolution();
+            cout  << " -------------------------------- " << endl;*/
 
-            this->printSolution();
+            this->workSolution.computePrice();
+            if (this->workSolution.price > this->bestSolution.price){
+                this->bestSolution = this->workSolution;
+            }
+
+            //this->workSolution.printSolution();
+
 
             // TODO: kill branch which can not beat the best. branch and bound.
-            // TODO: price check and save the best
+
         }
-        cout << "Solve the problem" << L3 << " " << L4 << " " << nEmpty << endl;
     }
 
     /**
@@ -250,8 +304,9 @@ public:
         // load arguments
         int k;
         cin >> this->m >> this->n >> k;
-
-        this->ground = vector < vector < int >> ();
+        this->workSolution.m = this->m;
+        this->workSolution.n = this->n;
+        this->workSolution.ground = vector < vector < int >> ();
 
         // init the ground
         for (int i = 0; i < m; i++) {
@@ -259,7 +314,7 @@ public:
             for (int j = 0; j < n; j++) {
                 tmp.push_back(0);
             }
-            this->ground.push_back(tmp);
+            this->workSolution.ground.push_back(tmp);
         }
 
         // load the forbidden fields
@@ -267,32 +322,8 @@ public:
             int x, y;
             cin >> x >> y;
             if (x >= 0 && x < n && y >= 0 && y < m) {
-                this->ground[y][x] = -1;
+                this->workSolution.ground[y][x] = -1;
             }
-        }
-    }
-
-    /**
-     * Print solution with 2D array and parameter of solution.
-     */
-    void printSolution() {
-        cout << "Max price: " << this->price << endl;
-        cout << "Number of L3: " << this->n_L3 << endl;
-        cout << "Number of L4: " << this->n_L4 << endl;
-        cout << "Number of not fill: " << this->n_not << endl;
-        /*for (auto &cord : this->not_cords) {
-            cout << cord.x << " " << cord.y << endl;
-        }*/
-
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n - 1; j++) {
-                cout << setw(PRINT_NUMBERS) << setfill(' ')
-                     << ((this->ground[i][j] == -1) ? "Z" : (this->ground[i][j] == 0) ? "-" : to_string(
-                             this->ground[i][j])) << " ";
-            }
-            cout << setw(PRINT_NUMBERS) << setfill(' ')
-                 << ((this->ground[i][n - 1] == -1) ? "Z" : (this->ground[i][n - 1] == 0) ? "-" : to_string(
-                         this->ground[i][n - 1])) << endl;
         }
     }
 };
@@ -301,7 +332,8 @@ int main() {
     POL *problem = new POL();
     problem->loadProblem();
     problem->solveMap();
-    problem->findEmptyCoords();
-    problem->printSolution();
+    solution best = problem->getBest();
+    best.findEmptyCoords();
+    best.printSolution();
     delete problem;
 }
