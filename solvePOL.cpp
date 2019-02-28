@@ -230,7 +230,7 @@ struct solution {
         for (unsigned int i = 0; i < v.size(); i++) {
             tmpX = x + v[i].x;
             tmpY = y + v[i].y;
-            if (tmpX >=  this->n || tmpY >= this->m || tmpX < 0 || tmpY < 0) return -1;
+            if (tmpX >= this->n || tmpY >= this->m || tmpX < 0 || tmpY < 0) return -1;
             if (this->ground[tmpY][tmpX] != oldVal) return -1;
         }
         for (unsigned int i = 0; i < v.size(); i++) {
@@ -294,6 +294,7 @@ public:
         // iteration stack for operations
         stack <stackItem> iterationStack;
         this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
+        this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
         this->workSolution.nL4 = 0;
 
@@ -370,7 +371,7 @@ public:
             }
 
             // cant put some in the last line or if not find empty place and add
-            if (tmp.coordinates.y != this->m) {
+            if (tmp.coordinates.y != this->m - 1) {
                 if (tmp.id < empty) tmp.cnt++;
                 cord next = this->workSolution.nextFree(tmp.coordinates.x, tmp.coordinates.y);
 
