@@ -305,12 +305,11 @@ public:
         this->bestSolution.computePrice();
 
         // add first possible place for add some item
-        iterationStack.push(stackItem(nextFree(&this->workSolution.ground, this->m, this->n, 0, 0), no, 1));
+        iterationStack.push(stackItem(nextFree(&this->workSolution.ground, this->m, this->n, -1, 0), no, 1));
 
         while (iterationStack.size() > 0) {
             stackItem tmp = iterationStack.top();
             iterationStack.pop();
-
             // if empty go back to next (back) position with some, after empty it is no possibility there
             if (tmp.id == empty || tmp.coordinates.x == -1 || tmp.coordinates.y == -1) {
                 continue;
@@ -324,6 +323,7 @@ public:
             }
             // add some next item on position
             while (1) {
+
                 int ret = addValueToMap(&this->workSolution.ground, this->m, this->n, ++tmp.id, 0, tmp.cnt,
                                         tmp.coordinates.x, tmp.coordinates.y);
                 if (tmp.id == empty || ret != -1) {
