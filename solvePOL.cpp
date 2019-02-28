@@ -103,7 +103,7 @@ static int eval_pol(int number) {
 }
 
 /**
- * One finded solution of map, the best for now.
+ * One found the solution of the map, the best for now.
  */
 struct solution {
 
@@ -111,13 +111,14 @@ struct solution {
      * Print solution with 2D array and parameter of solution.
      */
     void printSolution() {
-        this->findEmptyCoords();
+        vector <cord> notCords;
+        notCords = this->findEmptyCoords();
         this->computePrice();
         cout << "Max price: " << this->price << endl;
         cout << "Number of L3: " << this->nL3 << endl;
         cout << "Number of L4: " << this->nL4 << endl;
         cout << "Number of not fill: " << this->nEmptyBefore + this->nEmptyAfter << endl;
-        for (auto &cord : this->notCords) {
+        for (auto &cord : notCords) {
             cout << cord.x << " " << cord.y << endl;
         }
 
@@ -136,17 +137,18 @@ struct solution {
     /**
      * Count and save coords of the empty positions in map.
      */
-    void findEmptyCoords() {
-        notCords = vector<cord>();
+    vector <cord> findEmptyCoords() {
+        vector <cord> notCords = vector<cord>();
         int cnt = 0;
         for (int i = 0; i < this->m; i++)
             for (int j = 0; j < this->n; j++)
                 if (this->ground[i][j] == 0) {
-                    this->notCords.push_back(cord(j, i));
+                    notCords.push_back(cord(j, i));
                     cnt++;
                 }
         this->nEmptyBefore = cnt;
         this->nEmptyAfter = 0;
+        return notCords;
     }
 
     /**
@@ -161,34 +163,6 @@ struct solution {
      */
     void computeActPrice() {
         this->actPrice = 2 * this->nL3 + 3 * this->nL4 - 6 * this->nEmptyBefore;
-    }
-
-    /**
-     *  Count empty fields in solution filled and in no filled part.
-     *
-     * @param x x cord
-     * @param y y cord
-     */
-    void countEmptyCoords(int x, int y) {
-        int cntB = 0;
-        int cntA = 0;
-        int tmp = x + 1;
-        // after empty
-        for (unsigned int i = y; i < this->ground.size(); i++) {
-            for (unsigned int j = tmp; j < this->ground[i].size(); j++) {
-                if (this->ground[i][j] == 0) cntA++;
-            }
-            tmp = 0;
-        }
-        // before empty
-        for (int i = y; i >= 0; i--) {
-            for (int j = x; j >= 0; j--) {
-                if (this->ground[i][j] == 0)cntB++;
-            }
-            x = this->ground[i].size() - 1;
-        }
-        this->nEmptyAfter = cntA;
-        this->nEmptyBefore = cntB;
     }
 
     /**
@@ -244,13 +218,6 @@ struct solution {
         return 1;
     }
 
-    /**
-     * Count empty cords from position 0, 0.
-     */
-    void countEmptyCoords() {
-        this->countEmptyCoords(0, 0);
-    }
-
     int m;
     int n;
     int k;
@@ -261,10 +228,11 @@ struct solution {
     int nL4;
     int nEmptyBefore;
     int nEmptyAfter;
-    vector <cord> notCords;
 };
 
-
+/**
+ * Item to save to the iteration stack.
+ */
 struct stackItem {
 
     stackItem(cord coordinates, int id, int cnt) {
@@ -279,7 +247,7 @@ struct stackItem {
 };
 
 /**
- * Structure to save one solution with map and needed parameters.
+ * One solution class.
  */
 class POL {
     solution workSolution;
@@ -289,6 +257,10 @@ class POL {
     bool load;
 public:
 
+    /**
+     * Getter for the best solution in map.
+     * @return the best reach solution
+     */
     solution getBest() {
         return this->bestSolution;
     }
@@ -316,12 +288,13 @@ public:
         while (iterationStack.size() > 0) {
             stackItem tmp = iterationStack.top();
             iterationStack.pop();
-            // if empty go back to next (back) position with some. (after place empty there is no possibility there)
+            // if empty go back to next (back) position with some. (after place empty there is no next possibility there)
             if (tmp.id == empty) {
                 this->workSolution.nEmptyAfter += 1;
                 this->workSolution.nEmptyBefore -= 1;
                 continue;
             }
+
             // if there some item remove it, recount counts of items
             if (tmp.id > no) {
                 this->workSolution.addValueToMap(tmp.id, tmp.cnt, 0, tmp.coordinates.x, tmp.coordinates.y);
@@ -334,9 +307,9 @@ public:
                     this->workSolution.nEmptyAfter += 4;
                 }
             }
+
             // add some next item on position, add item count and empty places count
             while (1) {
-
                 int ret = this->workSolution.addValueToMap(++tmp.id, 0, tmp.cnt, tmp.coordinates.x, tmp.coordinates.y);
                 if (tmp.id == empty || ret != -1) {
                     if (tmp.id >= l41 && tmp.id <= l48) {
@@ -376,13 +349,13 @@ public:
                 continue;
             }
 
-            // cant put some in the last line or if not find empty place and add
+            // cant put some in the last line
             if (tmp.coordinates.y != this->m - 1) {
                 if (tmp.id < empty) tmp.cnt++;
                 cord next = this->workSolution.nextFree(tmp.coordinates.x, tmp.coordinates.y);
 
-                // add new free field to check possibility
                 if (next.x != -1 && next.y != -1) {
+                    // add new free field to check possibility of this field
                     iterationStack.push(stackItem(next, no, tmp.cnt));
                 }
             }
@@ -420,15 +393,20 @@ public:
         }
         this->load = true;
     }
+
+    /**
+     * Check for successfully load the problem.
+     * @return true if load the problem
+     */
     bool isLoad(){
         return this->load;
     }
 };
 
-
 int main(int argc, char* argv[]) {
     char *myFile = nullptr;
     bool stdIn = false;
+    // load the arguments
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
             myFile = argv[i + 1];
