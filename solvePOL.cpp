@@ -2,6 +2,11 @@
 #include <cstdlib>
 #include <vector>
 #include <iomanip>
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <string.h>
+#include <algorithm>
 #include <stack>
 #include <queue>
 
@@ -281,6 +286,7 @@ class POL {
     solution bestSolution;
     int m;
     int n;
+    bool load;
 public:
 
     solution getBest() {
@@ -386,10 +392,10 @@ public:
     /**
      * Load the problem from standard input.
      */
-    void loadProblem() {
+    void loadProblem(std::istream& in) {
         // load arguments
         int k;
-        cin >> this->m >> this->n >> k;
+        in >> this->m >> this->n >> k;
         this->workSolution.m = this->m;
         this->workSolution.n = this->n;
         this->workSolution.k = k;
@@ -407,19 +413,56 @@ public:
         // load the forbidden fields
         for (int i = 0; i < k; i++) {
             int x, y;
-            cin >> x >> y;
+            in >> x >> y;
             if (x >= 0 && x < n && y >= 0 && y < m) {
                 this->workSolution.ground[y][x] = -1;
             }
         }
+        this->load = true;
+    }
+    bool isLoad(){
+        return this->load;
     }
 };
 
-int main() {
+
+int main(int argc, char* argv[]) {
+    char *myFile = nullptr;
+    bool stdIn = false;
+    for (int i = 1; i < argc; i++) {
+        if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
+            myFile = argv[i + 1];
+            i++;
+        } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            cout << "Use -f <file> for the load from file or -i switch if you want to standard input." << endl;
+            exit(0);
+        } else if (strcmp(argv[i], "-i") == 0) {
+            stdIn = true;
+        }else {
+            cout << "Not enough or invalid arguments, please try again." << endl;
+            exit(1);
+        }
+    }
     POL *problem = new POL();
-    problem->loadProblem();
-    problem->solveMap();
-    solution best = problem->getBest();
-    best.printSolution();
-    delete problem;
+
+    // load the problem
+    if (myFile){
+        ifstream file;
+        file.open(myFile);
+        if (file.is_open()){
+            problem->loadProblem(file);
+            file.close();
+            stdIn = false;
+        }
+    }
+    if (stdIn) problem->loadProblem(cin);
+
+    if (problem->isLoad()){
+        problem->solveMap();
+        solution best = problem->getBest();
+        best.printSolution();
+        delete problem;
+    }else{
+        cout << "Problem not load." << endl;
+    }
 }
