@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <stack>
 #include <queue>
+#include <ctime>
 
 using namespace std;
 
@@ -436,9 +437,13 @@ int main(int argc, char* argv[]) {
     if (stdIn) problem->loadProblem(cin);
 
     if (problem->isLoad()){
+        clock_t begin = clock();
         problem->solveMap();
+        clock_t end = clock();
         solution best = problem->getBest();
         best.printSolution();
+        double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+        cout << "Solution time: "<< elapsed_secs << " s." << endl;
         delete problem;
     }else{
         cout << "Problem not load." << endl;
