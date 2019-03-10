@@ -167,6 +167,13 @@ struct solution {
     }
 
     /**
+    * Compute actual price. No add possible fill field to price.
+    */
+    void computeActPrice(int nL3, int nL4, int nEmptyBefore) {
+        this->actPrice = 2 * nL3 + 3 * nL4 - 6 * nEmptyBefore;
+    }
+
+    /**
      * Found next free field in array.
      *
      * @param array where to find the field
@@ -256,6 +263,7 @@ class POL {
     int m;
     int n;
     bool load;
+    int possibleBest;
 public:
 
     /**
@@ -264,6 +272,46 @@ public:
      */
     solution getBest() {
         return this->bestSolution;
+    }
+
+    void solveMapRecursion(){
+        this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
+        this->workSolution.nEmptyBefore = 0;
+        this->workSolution.nL3 = 0;
+        this->workSolution.nL4 = 0;
+
+        // possible the best solution on map
+        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
+        // init best solution
+        this->bestSolution = this->workSolution;
+        this->bestSolution.computePrice();
+    }
+    //TODO: solve one recursion with copy the whole solution.
+    void solveRecursion1(solution workSolution, cord cord, int cnt){
+        for (int id = l41; id < empty+1;id++){
+            // pridat pod cnt do mapy
+            // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
+
+            // find free from cord
+            // free je mimo -> return
+            // a zavolat znova s touto hodnotou
+
+            //po navratu odebrat aby se mohla zkusit nova hodnota
+        }
+    }
+
+    //TODO: second recursion only with cord pass, to much harder to do parallel
+    void solveRecursion2(cord cord, int cnt){
+        for (int id = l41; id < empty+1;id++){
+            // pridat pod cnt do mapy
+            // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
+
+            // find free from cord
+            // free je mimo -> return
+            // a zavolat znova s touto hodnotou
+
+            //po navratu odebrat aby se mohla zkusit nova hodnota
+        }
     }
 
     /**
@@ -278,7 +326,7 @@ public:
         this->workSolution.nL4 = 0;
 
         // possible the best solution on map
-        int possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
+        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
@@ -336,7 +384,7 @@ public:
             this->workSolution.computePrice();
 
             // if reach the maximum can end
-            if (this->workSolution.price == possibleBest) {
+            if (this->workSolution.price == this->possibleBest) {
                 this->bestSolution = this->workSolution;
                 return;
             }
