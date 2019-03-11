@@ -212,7 +212,7 @@ struct solution {
      */
     int addValueToMap(int id, int oldVal, int newVal, int x, int y) {
         int tmpX, tmpY;
-        if (id == empty) return 1;
+        if (id == empty) return id;
         vector <cord> v = items[id];
         for (unsigned int i = 0; i < v.size(); i++) {
             tmpX = x + v[i].x;
@@ -223,7 +223,7 @@ struct solution {
         for (unsigned int i = 0; i < v.size(); i++) {
             this->ground[y + v[i].y][x + v[i].x] = newVal;
         }
-        return 1;
+        return id;
     }
 
     int m;
@@ -274,7 +274,10 @@ public:
         return this->bestSolution;
     }
 
-    void solveRecursion1(){
+    /**
+     * Solution by recursion, init the recursion, copy the solution instance.
+     */
+    void solveRecursionCopy(){
         this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
         this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
@@ -282,108 +285,124 @@ public:
 
         // possible the best solution on map
         this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
+
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
-        this->solveRecursion1(this->workSolution, this->workSolution.nextFree(-1, 0), 1);
+
+        # pragma omp parallel num_threads (2)
+        {
+            # pragma omp single
+                this->solveRecursionCopy(this->workSolution, this->workSolution.nextFree(-1, 0), 1);
+        }
     }
 
-    void solveRecursion2(){
-        this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
-        this->workSolution.nEmptyBefore = 0;
-        this->workSolution.nL3 = 0;
-        this->workSolution.nL4 = 0;
-
-        // possible the best solution on map
-        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
-        // init best solution
-        this->bestSolution = this->workSolution;
-        this->bestSolution.computePrice();
-        this->solveRecursion2(this->workSolution.nextFree(-1, 0), 1);
-    }
-    //TODO: solve one recursion with copy the whole solution.
-    void solveRecursion1(solution sol, cord co, int cnt){
-        // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
-        // pripadne proriznout
-        // check act price
+    /**
+     * Recursion call for solve the instance.
+     *
+     * @param sol solution
+     * @param co coordinates of position
+     * @param cnt id of place item
+     */
+    void solveRecursionCopy(solution sol, cord co, int cnt){
 
         sol.computePrice();
-
+        bool flag = false;
         // if reach the maximum can end
-        if (sol.price == this->possibleBest) {
-            this->bestSolution = sol;
-            return;
-        }
+        // TODO: set flag end
+        /*if (sol.price == this->possibleBest) {
+            #pragma omp critical
+            {
+                if (sol.price == this->possibleBest) {
+                    this->bestSolution = sol;
+                    return;
+                }
+            }
+        }*/
+
         // if act solution is better than best solution -> replace
         if (sol.price > this->bestSolution.price) {
-            this->bestSolution = sol;
+            #pragma omp critical
+                if (sol.price > this->bestSolution.price)
+                    this->bestSolution = sol;
         }
+
         //check if act price + possible price can beat the max
         sol.computeActPrice();
-        if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price) {
-            return;
-        }
-        if (co.x == -1 || co.y == -1)return;
 
-        if (co.y == this->m -1) return;
+        if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price) {
+            #pragma omp critical
+                if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price)
+                    flag = true;
+        }
+        if (flag) return;
+        if (co.x == -1 || co.y == -1 || co.y == this->m -1)return;
+
         for (int id = l41; id < empty+1;id++){
 
-            // pridat pod cnt do mapy
+            // add new to map
             int ret = sol.addValueToMap(id, 0, cnt, co.x, co.y);
-
-            if (ret != -1) {
-                if (id >= l41 && id <= l48) {
-                    sol.nL4 += 1;
-                    sol.nEmptyAfter -= 5;
-                }
-                if (id >= l31 && id <= l38) {
-                    sol.nL3 += 1;
-                    sol.nEmptyAfter -= 4;
-                }
-                if (id == empty) {
-                    sol.nEmptyAfter -= 1;
-                    sol.nEmptyBefore += 1;
-                }
-            }else{
+            if (ret == -1) {
                 continue;
+            } else if (ret == empty) {
+                sol.nEmptyAfter -= 1;
+                sol.nEmptyBefore += 1;
+            } else if (ret >= l41 && ret <= l48){
+                sol.nL4 += 1;
+                sol.nEmptyAfter -= 5;
+            } else {
+                sol.nL3 += 1;
+                sol.nEmptyAfter -= 4;
             }
 
+            #pragma omp task
+            this->solveRecursionCopy(sol, sol.nextFree(co.x, co.y), cnt+1);
 
-
-
-            // find free from cord
-            // free je mimo -> return
-            // a zavolat znova s touto hodnotou
-            // cant put some in the last line
-
-            cord next = sol.nextFree(co.x, co.y);
-            this->solveRecursion1(sol, next, cnt+1);
-
-
-            // odebrani hodnot
-            sol.addValueToMap(id, cnt, 0, co.x, co.y);
-            if (id == empty) {
+            //remove from map to try new value
+            ret = sol.addValueToMap(id, cnt, 0, co.x, co.y);
+            if (ret == empty) {
                 sol.nEmptyAfter += 1;
                 sol.nEmptyBefore -= 1;
-                continue;
-            }
-            if (id >= l41 && id <= l48) {
+            } else if (ret >= l41 && ret <= l48){
                 sol.nL4 -= 1;
                 sol.nEmptyAfter += 5;
-            }
-            if (id >= l31 && id <= l38) {
+            } else {
                 sol.nL3 -= 1;
                 sol.nEmptyAfter += 4;
             }
-            //po navratu odebrat aby se mohla zkusit nova hodnota
         }
+        #pragma omp taskwait
     }
 
-    //TODO: second recursion only with cord pass, to much harder to do parallel
-    void solveRecursion2(cord co, int cnt){
-        // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
-        // pripadne proriznout
-        // check act price
+    /**
+     * Recursion with no copy the solution, work wwith class variable.
+     */
+    void solveRecursionNotCopy(){
+        this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
+        this->workSolution.nEmptyBefore = 0;
+        this->workSolution.nL3 = 0;
+        this->workSolution.nL4 = 0;
+
+        // possible the best solution on map
+        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
+
+        // init best solution
+        this->bestSolution = this->workSolution;
+        this->bestSolution.computePrice();
+
+        // call the recursion
+        this->solveRecursionNotCopy(this->workSolution.nextFree(-1, 0), 1);
+    }
+
+
+    /**
+     * Recursion with no copy, only pass the coordinates.
+     *
+     * @param co coordinates of do position
+     * @param cnt id of item on map
+     */
+    void solveRecursionNotCopy(cord co, int cnt){
+
         this->workSolution.computePrice();
 
         // if reach the maximum can end
@@ -391,68 +410,50 @@ public:
             this->bestSolution = this->workSolution;
             return;
         }
+
         // if act solution is better than best solution -> replace
         if (this->workSolution.price > this->bestSolution.price) {
             this->bestSolution = this->workSolution;
         }
+
         //check if act price + possible price can beat the max
         this->workSolution.computeActPrice();
         if (this->workSolution.actPrice + eval_pol(this->workSolution.nEmptyAfter) <= this->bestSolution.price) {
             return;
         }
-        if (co.x == -1 || co.y == -1)return;
 
-        if (co.y == this->m -1) return;
+        if (co.x == -1 || co.y == -1 || co.y == this->m -1) return;
+
         for (int id = l41; id < empty+1;id++){
 
-            // pridat pod cnt do mapy
+            //add to map
             int ret = this->workSolution.addValueToMap(id, 0, cnt, co.x, co.y);
-
-            if (ret != -1) {
-                if (id >= l41 && id <= l48) {
-                    this->workSolution.nL4 += 1;
-                    this->workSolution.nEmptyAfter -= 5;
-                }
-                if (id >= l31 && id <= l38) {
-                    this->workSolution.nL3 += 1;
-                    this->workSolution.nEmptyAfter -= 4;
-                }
-                if (id == empty) {
-                    this->workSolution.nEmptyAfter -= 1;
-                    this->workSolution.nEmptyBefore += 1;
-                }
-            }else{
+            if (ret == -1) {
                 continue;
+            } else if (ret == empty) {
+                this->workSolution.nEmptyAfter -= 1;
+                this->workSolution.nEmptyBefore += 1;
+            } else if (ret >= l41 && ret <= l48){
+                this->workSolution.nL4 += 1;
+                this->workSolution.nEmptyAfter -= 5;
+            } else {
+                this->workSolution.nL3 += 1;
+                this->workSolution.nEmptyAfter -= 4;
             }
 
+            this->solveRecursionNotCopy(this->workSolution.nextFree(co.x, co.y), cnt+1);
 
-
-
-            // find free from cord
-            // free je mimo -> return
-            // a zavolat znova s touto hodnotou
-            // cant put some in the last line
-
-            cord next = this->workSolution.nextFree(co.x, co.y);
-            this->solveRecursion2(next, cnt+1);
-
-
-            // odebrani hodnot
-            this->workSolution.addValueToMap(id, cnt, 0, co.x, co.y);
-            if (id == empty) {
+            ret = this->workSolution.addValueToMap(id, cnt, 0, co.x, co.y);
+            if (ret == empty) {
                 this->workSolution.nEmptyAfter += 1;
                 this->workSolution.nEmptyBefore -= 1;
-                continue;
-            }
-            if (id >= l41 && id <= l48) {
+            } else if (ret >= l41 && ret <= l48){
                 this->workSolution.nL4 -= 1;
                 this->workSolution.nEmptyAfter += 5;
-            }
-            if (id >= l31 && id <= l38) {
+            } else {
                 this->workSolution.nL3 -= 1;
                 this->workSolution.nEmptyAfter += 4;
             }
-            //po navratu odebrat aby se mohla zkusit nova hodnota
         }
     }
 
@@ -597,6 +598,7 @@ public:
 int main(int argc, char* argv[]) {
     char *myFile = nullptr;
     bool stdIn = false;
+    int run = 0;
     // load the arguments
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
@@ -607,7 +609,13 @@ int main(int argc, char* argv[]) {
             exit(0);
         } else if (strcmp(argv[i], "-i") == 0) {
             stdIn = true;
-        }else {
+        }else if (strcmp(argv[i], "-ls") == 0){
+            run = 1;
+        }else if (strcmp(argv[i], "-r") == 0){
+            run = 2;
+        }else if (strcmp(argv[i], "-tp") == 0){
+            run = 3;
+        } else {
             cout << "Not enough or invalid arguments, please try again." << endl;
             exit(1);
         }
@@ -628,9 +636,22 @@ int main(int argc, char* argv[]) {
 
     if (problem->isLoad()){
         clock_t begin = clock();
-        //problem->solveMap();
-        //problem->solveRecursion2();
-        problem->solveRecursion1();
+        switch (run){
+            case 1:
+                problem->solveMap();
+                break;
+            case 2:
+                problem->solveRecursionNotCopy();
+                break;
+            case 3:
+                problem->solveRecursionCopy();
+                break;
+            default:
+                cout << "Please specific the algorithm: \"-ls\" solution wth local stack;";
+                cout << ", \"-r\" recursion with share memory, ";
+                cout << "\"-tp\" task parallelism recursion with copying." << endl;
+                exit(1);
+        }
         clock_t end = clock();
         solution best = problem->getBest();
         best.printSolution();
