@@ -274,7 +274,7 @@ public:
         return this->bestSolution;
     }
 
-    void solveMapRecursion(){
+    void solveRecursion1(){
         this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
         this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
@@ -285,6 +285,20 @@ public:
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
+    }
+
+    void solveRecursion2(){
+        this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
+        this->workSolution.nEmptyBefore = 0;
+        this->workSolution.nL3 = 0;
+        this->workSolution.nL4 = 0;
+
+        // possible the best solution on map
+        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
+        // init best solution
+        this->bestSolution = this->workSolution;
+        this->bestSolution.computePrice();
+        this->solveRecursion2(this->workSolution.nextFree(-1, 0), 1);
     }
     //TODO: solve one recursion with copy the whole solution.
     void solveRecursion1(solution workSolution, cord cord, int cnt){
@@ -301,15 +315,78 @@ public:
     }
 
     //TODO: second recursion only with cord pass, to much harder to do parallel
-    void solveRecursion2(cord cord, int cnt){
+    void solveRecursion2(cord co, int cnt){
+        // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
+        // pripadne proriznout
+        // check act price
+        this->workSolution.computePrice();
+
+        // if reach the maximum can end
+        if (this->workSolution.price == this->possibleBest) {
+            this->bestSolution = this->workSolution;
+            return;
+        }
+        // if act solution is better than best solution -> replace
+        if (this->workSolution.price > this->bestSolution.price) {
+            this->bestSolution = this->workSolution;
+        }
+        //check if act price + possible price can beat the max
+        this->workSolution.computeActPrice();
+        if (this->workSolution.actPrice + eval_pol(this->workSolution.nEmptyAfter) <= this->bestSolution.price) {
+            return;
+        }
+        if (co.x == -1 || co.y == -1)return;
+
+        if (co.y == this->m -1) return;
         for (int id = l41; id < empty+1;id++){
+
             // pridat pod cnt do mapy
-            // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
+            int ret = this->workSolution.addValueToMap(id, 0, cnt, co.x, co.y);
+
+            if (ret != -1) {
+                if (id >= l41 && id <= l48) {
+                    this->workSolution.nL4 += 1;
+                    this->workSolution.nEmptyAfter -= 5;
+                }
+                if (id >= l31 && id <= l38) {
+                    this->workSolution.nL3 += 1;
+                    this->workSolution.nEmptyAfter -= 4;
+                }
+                if (id == empty) {
+                    this->workSolution.nEmptyAfter -= 1;
+                    this->workSolution.nEmptyBefore += 1;
+                }
+            }else{
+                continue;
+            }
+
+
+
 
             // find free from cord
             // free je mimo -> return
             // a zavolat znova s touto hodnotou
+            // cant put some in the last line
 
+            cord next = this->workSolution.nextFree(co.x, co.y);
+            this->solveRecursion2(next, cnt+1);
+
+
+            // odebrani hodnot
+            this->workSolution.addValueToMap(id, cnt, 0, co.x, co.y);
+            if (id == empty) {
+                this->workSolution.nEmptyAfter += 1;
+                this->workSolution.nEmptyBefore -= 1;
+                continue;
+            }
+            if (id >= l41 && id <= l48) {
+                this->workSolution.nL4 -= 1;
+                this->workSolution.nEmptyAfter += 5;
+            }
+            if (id >= l31 && id <= l38) {
+                this->workSolution.nL3 -= 1;
+                this->workSolution.nEmptyAfter += 4;
+            }
             //po navratu odebrat aby se mohla zkusit nova hodnota
         }
     }
@@ -486,7 +563,8 @@ int main(int argc, char* argv[]) {
 
     if (problem->isLoad()){
         clock_t begin = clock();
-        problem->solveMap();
+        //problem->solveMap();
+        problem->solveRecursion2();
         clock_t end = clock();
         solution best = problem->getBest();
         best.printSolution();
