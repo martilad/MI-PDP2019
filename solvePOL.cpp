@@ -355,7 +355,7 @@ public:
                 sol.nEmptyAfter -= 4;
             }
 
-            #pragma omp task
+            #pragma omp task if (cnt < 2 )
             this->solveRecursionCopy(sol, sol.nextFree(co.x, co.y), cnt+1);
 
             //remove from map to try new value
