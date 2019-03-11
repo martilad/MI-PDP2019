@@ -285,6 +285,7 @@ public:
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
+        this->solveRecursion1(this->workSolution, this->workSolution.nextFree(-1, 0), 1);
     }
 
     void solveRecursion2(){
@@ -301,15 +302,79 @@ public:
         this->solveRecursion2(this->workSolution.nextFree(-1, 0), 1);
     }
     //TODO: solve one recursion with copy the whole solution.
-    void solveRecursion1(solution workSolution, cord cord, int cnt){
+    void solveRecursion1(solution sol, cord co, int cnt){
+        // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
+        // pripadne proriznout
+        // check act price
+
+        sol.computePrice();
+
+        // if reach the maximum can end
+        if (sol.price == this->possibleBest) {
+            this->bestSolution = sol;
+            return;
+        }
+        // if act solution is better than best solution -> replace
+        if (sol.price > this->bestSolution.price) {
+            this->bestSolution = sol;
+        }
+        //check if act price + possible price can beat the max
+        sol.computeActPrice();
+        if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price) {
+            return;
+        }
+        if (co.x == -1 || co.y == -1)return;
+
+        if (co.y == this->m -1) return;
         for (int id = l41; id < empty+1;id++){
+
             // pridat pod cnt do mapy
-            // pokud se povede pridat tak zkontrolovat jestli je lepsi, nebo jestli neni uplne nejlepsi
+            int ret = sol.addValueToMap(id, 0, cnt, co.x, co.y);
+
+            if (ret != -1) {
+                if (id >= l41 && id <= l48) {
+                    sol.nL4 += 1;
+                    sol.nEmptyAfter -= 5;
+                }
+                if (id >= l31 && id <= l38) {
+                    sol.nL3 += 1;
+                    sol.nEmptyAfter -= 4;
+                }
+                if (id == empty) {
+                    sol.nEmptyAfter -= 1;
+                    sol.nEmptyBefore += 1;
+                }
+            }else{
+                continue;
+            }
+
+
+
 
             // find free from cord
             // free je mimo -> return
             // a zavolat znova s touto hodnotou
+            // cant put some in the last line
 
+            cord next = sol.nextFree(co.x, co.y);
+            this->solveRecursion1(sol, next, cnt+1);
+
+
+            // odebrani hodnot
+            sol.addValueToMap(id, cnt, 0, co.x, co.y);
+            if (id == empty) {
+                sol.nEmptyAfter += 1;
+                sol.nEmptyBefore -= 1;
+                continue;
+            }
+            if (id >= l41 && id <= l48) {
+                sol.nL4 -= 1;
+                sol.nEmptyAfter += 5;
+            }
+            if (id >= l31 && id <= l38) {
+                sol.nL3 -= 1;
+                sol.nEmptyAfter += 4;
+            }
             //po navratu odebrat aby se mohla zkusit nova hodnota
         }
     }
@@ -564,7 +629,8 @@ int main(int argc, char* argv[]) {
     if (problem->isLoad()){
         clock_t begin = clock();
         //problem->solveMap();
-        problem->solveRecursion2();
+        //problem->solveRecursion2();
+        problem->solveRecursion1();
         clock_t end = clock();
         solution best = problem->getBest();
         best.printSolution();
