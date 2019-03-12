@@ -10,6 +10,10 @@
 #include <stack>
 #include <queue>
 #include <ctime>
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 
 using namespace std;
 
@@ -264,14 +268,22 @@ class POL {
     int n;
     bool load;
     int possibleBest;
-public:
 
+public:
+    int nThreads;
+    int depthTaskParallel;
     /**
      * Getter for the best solution in map.
      * @return the best reach solution
      */
     solution getBest() {
         return this->bestSolution;
+    }
+
+    POL (int nThreads, int depthTaskParallel){
+        this->nThreads = nThreads;
+        this->depthTaskParallel = depthTaskParallel;
+        cout << this->nThreads;
     }
 
     /**
@@ -290,7 +302,7 @@ public:
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
 
-        # pragma omp parallel num_threads (2)
+        # pragma omp parallel num_threads (nThreads)
         {
             # pragma omp single
                 this->solveRecursionCopy(this->workSolution, this->workSolution.nextFree(-1, 0), 1);
@@ -355,7 +367,7 @@ public:
                 sol.nEmptyAfter -= 4;
             }
 
-            #pragma omp task if (cnt < 2 )
+            #pragma omp task if (cnt < this->depthTaskParallel )
             this->solveRecursionCopy(sol, sol.nextFree(co.x, co.y), cnt+1);
 
             //remove from map to try new value
@@ -371,7 +383,7 @@ public:
                 sol.nEmptyAfter += 4;
             }
         }
-        #pragma omp taskwait
+        //#pragma omp taskwait
     }
 
     /**
@@ -599,6 +611,8 @@ int main(int argc, char* argv[]) {
     char *myFile = nullptr;
     bool stdIn = false;
     int run = 0;
+    int nThreads = 1;
+    int deep = 1;
     // load the arguments
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
@@ -607,7 +621,13 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             cout << "Use -f <file> for the load from file or -i switch if you want to standard input." << endl;
             exit(0);
-        } else if (strcmp(argv[i], "-i") == 0) {
+        } else if (strcmp(argv[i], "-deep") == 0) {
+            deep = stoi(argv[i + 1]);
+            i++;
+        }else if (strcmp(argv[i], "-nThreads") == 0) {
+            nThreads = stoi(argv[i + 1]);
+            i++;
+        }else if (strcmp(argv[i], "-i") == 0) {
             stdIn = true;
         }else if (strcmp(argv[i], "-ls") == 0){
             run = 1;
@@ -620,7 +640,7 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
     }
-    POL *problem = new POL();
+    POL *problem = new POL(nThreads, deep);
 
     // load the problem
     if (myFile){
@@ -636,6 +656,10 @@ int main(int argc, char* argv[]) {
 
     if (problem->isLoad()){
         clock_t begin = clock();
+        #if defined(_OPENMP)
+        double beginR = omp_get_wtime();
+        #endif
+
         switch (run){
             case 1:
                 problem->solveMap();
@@ -653,10 +677,17 @@ int main(int argc, char* argv[]) {
                 exit(1);
         }
         clock_t end = clock();
+        #if defined(_OPENMP)
+        double endR = omp_get_wtime();
+        #endif
+
         solution best = problem->getBest();
         best.printSolution();
         double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-        cout << "Solution time: "<< elapsed_secs << " s." << endl;
+        cout << "Solution proc time: "<< elapsed_secs << " s." << endl;
+        #if defined(_OPENMP)
+        cout << "Solution real time (if parralel): "<< endR - beginR << " s." << endl;
+        #endif
         delete problem;
     }else{
         cout << "Problem not load." << endl;
