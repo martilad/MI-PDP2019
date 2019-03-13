@@ -364,7 +364,6 @@ public:
                 sol.nEmptyAfter += 4;
             }
         }
-        #pragma omp taskwait
     }
 
     /**
