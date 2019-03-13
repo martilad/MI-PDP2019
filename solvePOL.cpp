@@ -267,7 +267,6 @@ class POL {
     int m;
     int n;
     bool load;
-    int possibleBest;
 
 public:
     int nThreads;
@@ -295,9 +294,6 @@ public:
         this->workSolution.nL3 = 0;
         this->workSolution.nL4 = 0;
 
-        // possible the best solution on map
-        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
-
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
@@ -319,18 +315,6 @@ public:
     void solveRecursionCopy(solution sol, cord co, int cnt){
 
         sol.computePrice();
-        bool flag = false;
-        // if reach the maximum can end
-        // TODO: set flag end
-        /*if (sol.price == this->possibleBest) {
-            #pragma omp critical
-            {
-                if (sol.price == this->possibleBest) {
-                    this->bestSolution = sol;
-                    return;
-                }
-            }
-        }*/
 
         // if act solution is better than best solution -> replace
         if (sol.price > this->bestSolution.price) {
@@ -343,11 +327,8 @@ public:
         sol.computeActPrice();
 
         if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price) {
-            #pragma omp critical
-                if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price)
-                    flag = true;
+            return;
         }
-        if (flag) return;
         if (co.x == -1 || co.y == -1 || co.y == this->m -1)return;
 
         for (int id = l41; id < empty+1;id++){
@@ -383,7 +364,7 @@ public:
                 sol.nEmptyAfter += 4;
             }
         }
-        //#pragma omp taskwait
+        #pragma omp taskwait
     }
 
     /**
@@ -394,9 +375,6 @@ public:
         this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
         this->workSolution.nL4 = 0;
-
-        // possible the best solution on map
-        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
 
         // init best solution
         this->bestSolution = this->workSolution;
@@ -416,12 +394,6 @@ public:
     void solveRecursionNotCopy(cord co, int cnt){
 
         this->workSolution.computePrice();
-
-        // if reach the maximum can end
-        if (this->workSolution.price == this->possibleBest) {
-            this->bestSolution = this->workSolution;
-            return;
-        }
 
         // if act solution is better than best solution -> replace
         if (this->workSolution.price > this->bestSolution.price) {
@@ -480,8 +452,6 @@ public:
         this->workSolution.nL3 = 0;
         this->workSolution.nL4 = 0;
 
-        // possible the best solution on map
-        this->possibleBest = eval_pol(this->m * this->n - this->workSolution.k);
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
@@ -538,11 +508,6 @@ public:
             // check act price
             this->workSolution.computePrice();
 
-            // if reach the maximum can end
-            if (this->workSolution.price == this->possibleBest) {
-                this->bestSolution = this->workSolution;
-                return;
-            }
             // if act solution is better than best solution -> replace
             if (this->workSolution.price > this->bestSolution.price) {
                 this->bestSolution = this->workSolution;
