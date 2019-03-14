@@ -6,7 +6,6 @@
 #define MI_PDP2019_RECURSION_H
 
 #include "solver.h"
-#include "../helpers.h"
 
 class Recursion : public Solver {
 public:

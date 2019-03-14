@@ -6,6 +6,7 @@
 #define MI_PDP2019_SOLVER_H
 
 #include "../solution.h"
+#include "../helpers.h"
 
 class Solver{
 

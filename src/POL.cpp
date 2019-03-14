@@ -50,7 +50,7 @@ void POL::solveRecursionCopy(solution sol, cord co, int cnt) {
 
     // if act solution is better than best solution -> replace
     if (sol.price > this->bestSolution.price) {
-        #pragma omp critical
+#pragma omp critical
         if (sol.price > this->bestSolution.price)
             this->bestSolution = sol;
     }
