@@ -3,7 +3,6 @@
 //
 
 #include "../headers/POL.h"
-#include "../headers/helpers.h"
 
 /**
  * Getter for the best solution in map.
@@ -51,7 +50,7 @@ void POL::solveRecursionCopy(solution sol, cord co, int cnt) {
 
     // if act solution is better than best solution -> replace
     if (sol.price > this->bestSolution.price) {
-#pragma omp critical
+        #pragma omp critical
         if (sol.price > this->bestSolution.price)
             this->bestSolution = sol;
     }
@@ -59,7 +58,7 @@ void POL::solveRecursionCopy(solution sol, cord co, int cnt) {
     //check if act price + possible price can beat the max
     sol.computeActPrice();
 
-    if (sol.actPrice + eval_pol(sol.nEmptyAfter) <= this->bestSolution.price) {
+    if (sol.actPrice + helpers::eval_pol(sol.nEmptyAfter) <= this->bestSolution.price) {
         return;
     }
     if (co.x == -1 || co.y == -1 || co.y == this->m - 1)return;
@@ -134,7 +133,7 @@ void POL::solveRecursionNotCopy(cord co, int cnt) {
 
     //check if act price + possible price can beat the max
     this->workSolution.computeActPrice();
-    if (this->workSolution.actPrice + eval_pol(this->workSolution.nEmptyAfter) <= this->bestSolution.price) {
+    if (this->workSolution.actPrice + helpers::eval_pol(this->workSolution.nEmptyAfter) <= this->bestSolution.price) {
         return;
     }
 
@@ -247,7 +246,7 @@ void POL::solveMap() {
         }
         // check if act price + possible price can beat the max
         this->workSolution.computeActPrice();
-        if (this->workSolution.actPrice + eval_pol(this->workSolution.nEmptyAfter) <= this->bestSolution.price) {
+        if (this->workSolution.actPrice + helpers::eval_pol(this->workSolution.nEmptyAfter) <= this->bestSolution.price) {
             continue;
         }
 

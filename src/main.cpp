@@ -9,9 +9,10 @@
 #endif
 #include "../headers/solution.h"
 #include "../headers/POL.h"
+#include "../headers/solvers/solver.h"
+#include "../headers/solvers/recursion.h"
 
 int main(int argc, char* argv[]) {
-    std::cout << "hello" << std::endl;
     char *myFile = nullptr;
     bool stdIn = false;
     int run = 0;
@@ -44,7 +45,23 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
     }
-    POL *problem = new POL(nThreads, deep);
+    Solver * problem;
+    switch (run){
+        case 1:
+            std::cout << "Not implemet" << std::endl;
+            break;
+        case 2:
+            problem = new Recursion();
+            break;
+        case 3:
+            std::cout << "Not implemet" << std::endl;
+            break;
+        default:
+            std::cout << "Please specific the algorithm: \"-ls\" solution wth local stack;";
+            std::cout << ", \"-r\" recursion with share memory, ";
+            std::cout << "\"-tp\" task parallelism recursion with copying." << std::endl;
+            exit(1);
+    }
 
     // load the problem
     if (myFile){
@@ -64,22 +81,7 @@ int main(int argc, char* argv[]) {
         double beginR = omp_get_wtime();
         #endif
 
-        switch (run){
-            case 1:
-                problem->solveMap();
-                break;
-            case 2:
-                problem->solveRecursionNotCopy();
-                break;
-            case 3:
-                problem->solveRecursionCopy();
-                break;
-            default:
-                std::cout << "Please specific the algorithm: \"-ls\" solution wth local stack;";
-                std::cout << ", \"-r\" recursion with share memory, ";
-                std::cout << "\"-tp\" task parallelism recursion with copying." << std::endl;
-                exit(1);
-        }
+        problem->solve();
         clock_t end = clock();
         #if defined(_OPENMP)
         double endR = omp_get_wtime();

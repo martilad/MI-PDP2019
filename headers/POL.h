@@ -10,6 +10,8 @@
 #include <queue>
 #include "solution.h"
 #include "stackItem.h"
+#include "helpers.h"
+
 
 
 /**
