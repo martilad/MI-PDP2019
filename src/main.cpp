@@ -8,7 +8,6 @@
 #include <omp.h>
 #endif
 #include "../headers/solution.h"
-#include "../headers/POL.h"
 #include "../headers/solvers/solver.h"
 #include "../headers/solvers/recursion.h"
 #include "../headers/solvers/dataParallel.h"
@@ -20,6 +19,7 @@ int main(int argc, char* argv[]) {
     int run = 0;
     int nThreads = -1;
     int deep = -1;
+    int nInst = -1;
     // load the arguments
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "Insert number of task generated for data parallel algorithm!!!";
                 exit(1);
             }
-            deep = std::stoi(argv[i + 1]);
+            nInst = std::stoi(argv[i + 1]);
             i++;
         }else if (strcmp(argv[i], "-nThreads") == 0) {
             if (i == argc-1){
@@ -69,8 +69,8 @@ int main(int argc, char* argv[]) {
     Solver * problem;
     switch (run){
         case 1:
-            if (nThreads < 1 || deep < 0){
-                std::cout << "Specific real number of thread or positive number of generated tasks." << std::endl;
+            if (nThreads < 1 || nInst < 0){
+                std::cout << "Specific real number of thread (-nThreads) or positive number of generated tasks (-nInst)." << std::endl;
                 exit(1);
             }
             problem = new DataParallel(nThreads, deep);
@@ -80,7 +80,8 @@ int main(int argc, char* argv[]) {
             break;
         case 3:
             if (nThreads < 1 || deep < 0){
-                std::cout << "Specific real number of thread or positive number of generated tasks." << std::endl;
+                std::cout << "Specific real number of thread (-nThreads) or positive number of generated tasks (-deep)." << std::endl;
+                exit(1);
             }
             problem = new TaskParallel(nThreads, deep);
             break;

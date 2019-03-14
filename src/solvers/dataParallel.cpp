@@ -11,6 +11,20 @@ DataParallel::DataParallel(int nThreads, int generated): Solver() {
 
 DataParallel::~DataParallel() {}
 
+void generateInstBFS(){
+
+}
+
+void solveOneInst(Item it){
+
+}
+
+void recursionSingleThreadDFS(solution * sol, cord co, int cnt){
+
+}
+
+
+
 void DataParallel::solve(){
     // iteration stack for operations
     std::stack <stackItem> iterationStack;

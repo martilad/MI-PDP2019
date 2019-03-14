@@ -120,6 +120,8 @@ int solution::addValueToMap(int id, int oldVal, int newVal, int x, int y) {
     for (unsigned int i = 0; i < v.size(); i++) {
         this->ground[y + v[i].y][x + v[i].x] = newVal;
     }
+
+
     return id;
 }
 

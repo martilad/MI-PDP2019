@@ -63,7 +63,7 @@ void TaskParallel::taskParallel(solution sol, cord co, int cnt){
             sol.nEmptyAfter -= 4;
         }
 
-#pragma omp task if (cnt < this->depthTaskParallel )
+#pragma omp task if (cnt-1 < this->depthTaskParallel )
         this->taskParallel(sol, sol.nextFree(co.x, co.y), cnt + 1);
 
         //remove from map to try new value

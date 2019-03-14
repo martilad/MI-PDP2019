@@ -5,17 +5,22 @@
 #ifndef MI_PDP2019_STACKITEM_H
 #define MI_PDP2019_STACKITEM_H
 
+#include "cord.h"
+#include "solution.h"
+
 /**
  * Item to save to the iteration stack.
  */
-struct stackItem {
+struct Item {
 
-    stackItem(cord coordinates, int id, int cnt) {
+    Item(solution sol, cord coordinates, int id, int cnt) {
+        this->sol = sol;
         this->coordinates = coordinates;
         this->id = id;
         this->cnt = cnt;
     }
 
+    solution sol;
     cord coordinates;
     int id;
     int cnt;

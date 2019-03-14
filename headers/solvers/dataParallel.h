@@ -7,22 +7,35 @@
 
 #include <stack>
 #include "solver.h"
-#include "../stackItem.h"
+#include "../item.h"
 
 
 class DataParallel : public Solver {
 
 protected:
+
     int nThreads;
     int generated;
 
+    void generateInstBFS();
+
+    void solveOneInst(Item it);
+
+    void recursionSingleThreadDFS(solution * sol, cord co, int cnt);
+
 public:
+
     DataParallel(int nThreads, int generated);
     virtual ~DataParallel();
+
     /**
      * Solve the map with items in possibility.
      */
     virtual void solve();
+
+
+
+
 
 };
 

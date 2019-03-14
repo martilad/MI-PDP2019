@@ -10,16 +10,9 @@
 class TaskParallel : public Solver {
 
 protected:
+
     int nThreads;
     int depthTaskParallel;
-
-public:
-    TaskParallel(int nThreads, int depthTaskParallel);
-    virtual ~TaskParallel();
-    /**
-     * Solve the map with items in possibility.
-     */
-    virtual void solve();
 
     /**
      * Recursion with no copy, only pass the coordinates.
@@ -28,6 +21,18 @@ public:
      * @param cnt id of item on map
      */
     void taskParallel(solution sol, cord co, int cnt);
+
+public:
+
+    TaskParallel(int nThreads, int depthTaskParallel);
+    virtual ~TaskParallel();
+
+    /**
+     * Solve the map with items in possibility.
+     */
+    virtual void solve();
+
+
 
 };
 

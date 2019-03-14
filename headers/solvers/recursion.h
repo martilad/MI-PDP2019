@@ -8,14 +8,8 @@
 #include "solver.h"
 
 class Recursion : public Solver {
-public:
-    Recursion();
-    virtual ~Recursion();
-    /**
-     * Solve the map with items in possibility.
-     */
-    virtual void solve();
 
+protected:
     /**
      * Recursion with no copy, only pass the coordinates.
      *
@@ -23,6 +17,15 @@ public:
      * @param cnt id of item on map
      */
     void recursion(cord co, int cnt);
+
+public:
+
+    Recursion();
+    virtual ~Recursion();
+    /**
+     * Solve the map with items in possibility.
+     */
+    virtual void solve();
 
 };
 
