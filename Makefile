@@ -1,4 +1,4 @@
-PROGRAM=martilad_PDP_solution
+PROGRAM=martilad
 
 CC=g++
 
