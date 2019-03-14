@@ -21,9 +21,9 @@ void TaskParallel::solve(){
     this->bestSolution = this->workSolution;
     this->bestSolution.computePrice();
 
-# pragma omp parallel num_threads (nThreads)
+    # pragma omp parallel num_threads (nThreads)
     {
-# pragma omp single
+        # pragma omp single
         this->taskParallel(this->workSolution, this->workSolution.nextFree(-1, 0), 1);
     }
 }
@@ -33,7 +33,7 @@ void TaskParallel::taskParallel(solution sol, cord co, int cnt){
 
     // if act solution is better than best solution -> replace
     if (sol.price > this->bestSolution.price) {
-#pragma omp critical
+        #pragma omp critical
         if (sol.price > this->bestSolution.price)
             this->bestSolution = sol;
     }
@@ -52,31 +52,12 @@ void TaskParallel::taskParallel(solution sol, cord co, int cnt){
         int ret = sol.addValueToMap(id, 0, cnt, co.x, co.y);
         if (ret == -1) {
             continue;
-        } else if (ret == empty) {
-            sol.nEmptyAfter -= 1;
-            sol.nEmptyBefore += 1;
-        } else if (ret >= l41 && ret <= l48) {
-            sol.nL4 += 1;
-            sol.nEmptyAfter -= 5;
-        } else {
-            sol.nL3 += 1;
-            sol.nEmptyAfter -= 4;
         }
 
-#pragma omp task if (cnt-1 < this->depthTaskParallel )
+        #pragma omp task if (cnt-1 < this->depthTaskParallel )
         this->taskParallel(sol, sol.nextFree(co.x, co.y), cnt + 1);
 
         //remove from map to try new value
         ret = sol.addValueToMap(id, cnt, 0, co.x, co.y);
-        if (ret == empty) {
-            sol.nEmptyAfter += 1;
-            sol.nEmptyBefore -= 1;
-        } else if (ret >= l41 && ret <= l48) {
-            sol.nL4 -= 1;
-            sol.nEmptyAfter += 5;
-        } else {
-            sol.nL3 -= 1;
-            sol.nEmptyAfter += 4;
-        }
     }
 }

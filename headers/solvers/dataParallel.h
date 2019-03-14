@@ -5,7 +5,7 @@
 #ifndef MI_PDP2019_DATAPARALLEL_H
 #define MI_PDP2019_DATAPARALLEL_H
 
-#include <stack>
+#include <deque>
 #include "solver.h"
 #include "../item.h"
 
@@ -17,10 +17,21 @@ protected:
     int nThreads;
     int generated;
 
-    void generateInstBFS();
+    /**
+     * Generate instances to queue for threads.
+     *
+     * @param queue queue to push in
+     * @param nRelaxation min number of items in queue, maximum is instCount + 16 in the worst case.
+     */
+    void generateInstBFS(std::deque<Item> * queue, unsigned int instCount);
 
-    void solveOneInst(Item it);
-
+    /**
+     * Recursion for single thread solution, not copy recursion on one thread.
+     *
+     * @param sol pointer on solution
+     * @param co coordinates to solve
+     * @param cnt counter
+     */
     void recursionSingleThreadDFS(solution * sol, cord co, int cnt);
 
 public:

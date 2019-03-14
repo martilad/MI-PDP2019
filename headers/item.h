@@ -13,16 +13,14 @@
  */
 struct Item {
 
-    Item(solution sol, cord coordinates, int id, int cnt) {
+    Item(solution sol, cord co, int cnt) {
         this->sol = sol;
-        this->coordinates = coordinates;
-        this->id = id;
+        this->co = co;
         this->cnt = cnt;
     }
 
     solution sol;
-    cord coordinates;
-    int id;
+    cord co;
     int cnt;
 };
 

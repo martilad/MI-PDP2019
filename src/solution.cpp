@@ -15,9 +15,9 @@ void solution::printSolution() {
     std::cout << "Number of L3: " << this->nL3 << std::endl;
     std::cout << "Number of L4: " << this->nL4 << std::endl;
     std::cout << "Number of not fill: " << this->nEmptyBefore + this->nEmptyAfter << std::endl;
-    for (auto &cord : notCords) {
+    /*for (auto &cord : notCords) {
         std::cout << cord.x << " " << cord.y << std::endl;
-    }
+    }*/
 
     for (int i = 0; i < this->m; i++) {
         for (int j = 0; j < this->n - 1; j++) {
@@ -44,8 +44,6 @@ std::vector <cord> solution::findEmptyCoords() {
                 notCords.push_back(cord(j, i));
                 cnt++;
             }
-    this->nEmptyBefore = cnt;
-    this->nEmptyAfter = 0;
     return notCords;
 }
 
@@ -109,7 +107,17 @@ cord solution::nextFree(int x, int y) const {
  */
 int solution::addValueToMap(int id, int oldVal, int newVal, int x, int y) {
     int tmpX, tmpY;
-    if (id == empty) return id;
+    if (id == empty) {
+        if (newVal == 0){
+            this->nEmptyAfter += 1;
+            this->nEmptyBefore -= 1;
+            return id;
+        } else {
+            this->nEmptyAfter -= 1;
+            this->nEmptyBefore += 1;
+            return id;
+        }
+    }
     std::vector <cord> v = items[id];
     for (unsigned int i = 0; i < v.size(); i++) {
         tmpX = x + v[i].x;
@@ -121,7 +129,25 @@ int solution::addValueToMap(int id, int oldVal, int newVal, int x, int y) {
         this->ground[y + v[i].y][x + v[i].x] = newVal;
     }
 
-
-    return id;
+    if (newVal == 0){
+        if (id >= l41 && id <= l48) {
+            this->nL4 -= 1;
+            this->nEmptyAfter += 5;
+        } else {
+            this->nL3 -= 1;
+            this->nEmptyAfter += 4;
+        }
+        return id;
+    }
+    else {
+        if (id >= l41 && id <= l48) {
+            this->nL4 += 1;
+            this->nEmptyAfter -= 5;
+        } else {
+            this->nL3 += 1;
+            this->nEmptyAfter -= 4;
+            return id;
+        }
+    }
 }
 
