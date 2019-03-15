@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "Specific real number of thread (-nThreads) or positive number of generated tasks (-nInst)." << std::endl;
                 exit(1);
             }
-            problem = new DataParallel(nThreads, deep);
+            problem = new DataParallel(nThreads, nInst);
             break;
         case 2:
             problem = new Recursion();

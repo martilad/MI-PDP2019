@@ -6,6 +6,9 @@
 #define MI_PDP2019_DATAPARALLEL_H
 
 #include <deque>
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 #include "solver.h"
 #include "../item.h"
 
@@ -14,7 +17,6 @@ class DataParallel : public Solver {
 
 protected:
 
-    int nThreads;
     int generated;
 
     /**
@@ -23,7 +25,7 @@ protected:
      * @param queue queue to push in
      * @param nRelaxation min number of items in queue, maximum is instCount + 16 in the worst case.
      */
-    void generateInstBFS(std::deque<Item> * queue, unsigned int instCount);
+    void generateInstBFS(std::deque<Item> * queue, int instCount);
 
     /**
      * Recursion for single thread solution, not copy recursion on one thread.

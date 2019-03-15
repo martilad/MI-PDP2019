@@ -5,8 +5,10 @@
 #include "../../headers/solvers/dataParallel.h"
 
 DataParallel::DataParallel(int nThreads, int generated): Solver() {
-    this->nThreads = nThreads;
     this->generated = generated;
+    #if defined(_OPENMP)
+    omp_set_num_threads(nThreads);
+    #endif
 }
 
 DataParallel::~DataParallel() {}
@@ -23,17 +25,20 @@ void DataParallel::solve(){
 
     std::deque<Item> * queue = new std::deque<Item>();
     queue->push_back(Item(this->workSolution, this->workSolution.nextFree(-1, 0), 1));
-    this->generateInstBFS(queue, 1);
+
+    this->generateInstBFS(queue, this->generated);
 
     // call the recursion
-    for (unsigned int i = 0; i< queue->size();i++){
+    unsigned int i=0;
+    #pragma omp parallel for private(i) schedule(auto)
+    for (i = 0; i< queue->size();i++){
         this->recursionSingleThreadDFS(&((*queue)[i].sol), (*queue)[i].co, (*queue)[i].cnt);
     }
 }
 
-void DataParallel::generateInstBFS(std::deque<Item> * queue, unsigned int instCount){
+void DataParallel::generateInstBFS(std::deque<Item> * queue, int instCount){
 
-    while (queue->size() < instCount){
+    while ((int)queue->size() < instCount){
         Item it = queue->front();
         queue->pop_front();
 
@@ -54,7 +59,9 @@ void DataParallel::recursionSingleThreadDFS(solution * sol, cord co, int cnt){
 
     // if act solution is better than best solution -> replace
     if (sol->price > this->bestSolution.price) {
-        this->bestSolution = (*sol);
+        #pragma omp critical
+        if (sol->price > this->bestSolution.price)
+            this->bestSolution = (*sol);
     }
 
     sol->computeActPrice();

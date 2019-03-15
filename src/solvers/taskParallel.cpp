@@ -21,7 +21,7 @@ void TaskParallel::solve(){
     this->bestSolution = this->workSolution;
     this->bestSolution.computePrice();
 
-    # pragma omp parallel num_threads (nThreads)
+    # pragma omp parallel num_threads (this->nThreads)
     {
         # pragma omp single
         this->taskParallel(this->workSolution, this->workSolution.nextFree(-1, 0), 1);
