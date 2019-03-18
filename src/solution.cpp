@@ -111,12 +111,11 @@ int solution::addValueToMap(int id, int oldVal, int newVal, int x, int y) {
         if (newVal == 0){
             this->nEmptyAfter += 1;
             this->nEmptyBefore -= 1;
-            return id;
         } else {
             this->nEmptyAfter -= 1;
             this->nEmptyBefore += 1;
-            return id;
         }
+        return id;
     }
     std::vector <cord> v = items[id];
     for (unsigned int i = 0; i < v.size(); i++) {
@@ -137,7 +136,6 @@ int solution::addValueToMap(int id, int oldVal, int newVal, int x, int y) {
             this->nL3 -= 1;
             this->nEmptyAfter += 4;
         }
-        return id;
     }
     else {
         if (id >= l41 && id <= l48) {
@@ -146,8 +144,8 @@ int solution::addValueToMap(int id, int oldVal, int newVal, int x, int y) {
         } else {
             this->nL3 += 1;
             this->nEmptyAfter -= 4;
-            return id;
         }
     }
+    return id;
 }
 

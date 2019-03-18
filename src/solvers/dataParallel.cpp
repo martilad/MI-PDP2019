@@ -30,7 +30,7 @@ void DataParallel::solve(){
 
     // call the recursion
     unsigned int i=0;
-    #pragma omp parallel for private(i) schedule(auto)
+    #pragma omp parallel for private(i) schedule(dynamic)
     for (i = 0; i< queue->size();i++){
         this->recursionSingleThreadDFS(&((*queue)[i].sol), (*queue)[i].co, (*queue)[i].cnt);
     }
