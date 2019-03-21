@@ -1,8 +1,8 @@
 PROGRAM=martilad
 
-CC=g++
+CC=mpic++
 
-CFLAGS=-std=c++11 -Wall -pedantic -Wextra -g -O3 -fopenmp
+CFLAGS= -std=c++11 -Wall -pedantic -Wextra -g -O3 -fopenmp -lm
 
 build: $(PROGRAM)
 
