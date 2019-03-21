@@ -7,7 +7,7 @@ CFLAGS= -std=c++11 -Wall -pedantic -Wextra -g -O3 -fopenmp -lm
 build: $(PROGRAM)
 
 $(PROGRAM): objs/solution.o objs/helpers.o objs/solver.o objs/recursion.o objs/taskParallel.o \
-objs/dataParallel.o objs/main.o
+objs/dataParallel.o objs/MPIParallel.o objs/main.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 objs/helpers.o: src/helpers.cpp headers/helpers.h | objs
@@ -31,8 +31,12 @@ objs/dataParallel.o: src/solvers/dataParallel.cpp headers/solvers/dataParallel.h
 headers/solution.h headers/item.h | objs
 	$(CC) $(CFLAGS) -c $< -o $@
 
+objs/MPIParallel.o: src/solvers/MPIParallel.cpp headers/solvers/MPIParallel.h headers/solvers/solver.h \
+headers/solution.h headers/item.h | objs
+	$(CC) $(CFLAGS) -c $< -o $@
+
 objs/main.o: src/main.cpp headers/solution.h headers/solvers/solver.h headers/solvers/recursion.h \
-headers/solvers/taskParallel.h headers/solvers/dataParallel.h | objs
+headers/solvers/taskParallel.h headers/solvers/dataParallel.h headers/solvers/MPIParallel.h | objs
 	$(CC) $(CFLAGS) -c $< -o $@
 
 objs:

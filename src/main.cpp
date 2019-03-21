@@ -13,17 +13,20 @@
 #include "../headers/solvers/recursion.h"
 #include "../headers/solvers/dataParallel.h"
 #include "../headers/solvers/taskParallel.h"
+#include "../headers/solvers/MPIParallel.h"
+#include "../headers/helpers.h"
 
 int main(int argc, char* argv[]) {
     char *myFile = nullptr;
-    bool stdIn = false;
     int run = 0;
-    int nThreads = -1;
-    int deep = -1;
-    int nInst = -1;
+    int nT = -1;
+    int nN = -1;
+    int nNP = -1;
     int my_rank;
     int p;
     bool go = true;
+
+    helpers::load_arguments(&myFile, &run, &nT, &nN, &nNP, argc, argv);
 
     /* start up MPI */
     MPI_Init( &argc, &argv );
@@ -34,79 +37,30 @@ int main(int argc, char* argv[]) {
     /* find out number of processes */
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    // load the arguments
-    for (int i = 1; i < argc; i++) {
-        if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
-            if (i == argc-1){
-                std::cout << "Specific the file!!!";
-                exit(1);
-            }
-            myFile = argv[i + 1];
-            i++;
-        } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-            std::cout << "Use -f <file> for the load from file or -i switch if you want to standard input." << std::endl;
-            exit(0);
-        } else if (strcmp(argv[i], "-deep") == 0) {
-            if (i == argc-1){
-                std::cout << "Insert depth for add recursion as task for parallel!!!";
-                exit(1);
-            }
-            deep = std::stoi(argv[i + 1]);
-            i++;
-        }else if (strcmp(argv[i], "-nInst") == 0) {
-            if (i == argc-1){
-                std::cout << "Insert number of task generated for data parallel algorithm!!!";
-                exit(1);
-            }
-            nInst = std::stoi(argv[i + 1]);
-            i++;
-        }else if (strcmp(argv[i], "-nThreads") == 0) {
-            if (i == argc-1){
-                std::cout << "Insert number of threads!!!";
-                exit(1);
-            }
-            nThreads = std::stoi(argv[i + 1]);
-            i++;
-        }else if (strcmp(argv[i], "-i") == 0) {
-            stdIn = true;
-        }else if (strcmp(argv[i], "-dp") == 0){
-            run = 1;
-        }else if (strcmp(argv[i], "-r") == 0){
-            run = 2;
-        }else if (strcmp(argv[i], "-tp") == 0){
-            run = 3;
-        }else if (strcmp(argv[i], "-mpi") == 0){
-            run = 4;
-        } else {
-            std::cout << "Not enough or invalid arguments, please try again." << std::endl;
-            exit(1);
-        }
-    }
     Solver * problem;
     switch (run){
         case 1:
-            if (nThreads < 1 || nInst < 0){
-                std::cout << "Specific real number of thread (-nThreads) or positive number of generated tasks (-nInst)." << std::endl;
+            if (nT < 1 || nN < 0){
+                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nIN)." << std::endl;
                 exit(1);
             }
-            if (my_rank != 0)go = false;
-            problem = new DataParallel(nThreads, nInst);
+            go = false;
+            problem = new DataParallel(nT, nN);
             break;
         case 2:
-            if (my_rank != 0)go = false;
+            go = false;
             problem = new Recursion();
             break;
         case 3:
-            if (nThreads < 1 || deep < 0){
-                std::cout << "Specific real number of thread (-nThreads) or positive number of generated tasks (-deep)." << std::endl;
+            if (nT < 1 || nN < 0){
+                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nN)." << std::endl;
                 exit(1);
             }
-            if (my_rank != 0)go = false;
-            problem = new TaskParallel(nThreads, deep);
+            go = false;
+            problem = new TaskParallel(nT, nN);
             break;
         case 4:
-            std::cout << "one process" << std::endl;
-            go = false;
+            problem = new MPIParallel(nT, nN, my_rank);
             break;
         default:
             std::cout << "Please specific the algorithm: \"-dp\" data parallel solution;";
@@ -114,7 +68,7 @@ int main(int argc, char* argv[]) {
             std::cout << "\"-tp\" task parallelism recursion with copying." << std::endl;
             exit(1);
     }
-    if (go){
+    if (my_rank == 0){
         // load the problem
         if (myFile){
             std::ifstream file;
@@ -122,34 +76,32 @@ int main(int argc, char* argv[]) {
             if (file.is_open()){
                 problem->loadProblem(file);
                 file.close();
-                stdIn = false;
             }
+        } else {
+            problem->loadProblem(std::cin);
         }
-        if (stdIn) problem->loadProblem(std::cin);
+    }
+    if (go || my_rank == 0){
+        clock_t begin = clock();
+        #if defined(_OPENMP)
+        double beginR = omp_get_wtime();
+        #endif
+        problem->solve();
 
-        if (problem->isLoad()){
-            clock_t begin = clock();
-            #if defined(_OPENMP)
-            double beginR = omp_get_wtime();
-            #endif
-
-            problem->solve();
-            clock_t end = clock();
-            #if defined(_OPENMP)
-            double endR = omp_get_wtime();
-            #endif
-
+        clock_t end = clock();
+        #if defined(_OPENMP)
+        double endR = omp_get_wtime();
+        #endif
+        if (my_rank == 0){
             solution best = problem->getBest();
             best.printSolution();
-            double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-            std::cout << "Solution proc time: "<< elapsed_secs << " s." << std::endl;
-            #if defined(_OPENMP)
-            std::cout << "Solution real time (if parralel): "<< endR - beginR << " s." << std::endl;
-            #endif
-            delete problem;
-        }else{
-            std::cout << "Problem not load. Need use -i for load problem from standard input or -f and specific file." << std::endl;
         }
+        double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+        std::cout << "Solution proc time: "<< elapsed_secs << " s." << std::endl;
+        #if defined(_OPENMP)
+        std::cout << "Solution real time (if parralel): "<< endR - beginR << " s." << std::endl;
+        #endif
+        delete problem;
     }
     /* shut down MPI */
     MPI_Finalize();

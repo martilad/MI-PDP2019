@@ -7,6 +7,7 @@
 
 #include "../solution.h"
 #include "../helpers.h"
+#include <iostream>
 
 class Solver{
 

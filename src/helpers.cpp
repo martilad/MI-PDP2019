@@ -18,6 +18,58 @@ namespace helpers{
         else if (mod == 3) return ((number - 8) / 5) * 3 + 2 * 2;
         else return ((number - 4) / 5) * 3 + 2;
     }
+
+
+    void load_arguments(char **file, int *run, int *nT, int *nN, int *nNP, int argc, char* argv[]){
+        // load the arguments
+        for (int i = 1; i < argc; i++) {
+            if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) && (i + 1 <= argc))  {
+                if (i == argc-1){
+                    std::cout << "Specific the file!!!";
+                    exit(1);
+                }
+                (*file) = argv[i + 1];
+                i++;
+            } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+                std::cout << "Use -f <file> for the load from file not if you want to standard input.";
+                std::cout << "There are many others switch, need write this TODO:" << std::endl;
+                exit(0);
+            } else if (strcmp(argv[i], "-nN") == 0) {
+                if (i == argc-1){
+                    std::cout << "Insert depth or min number of inst for split problem in one process!!!";
+                    exit(1);
+                }
+                (*nN) = std::stoi(argv[i + 1]);
+                i++;
+            }else if (strcmp(argv[i], "-nNP") == 0) {
+                if (i == argc-1){
+                    std::cout << "Insert min number of generated instances with master process in MPI.!!!";
+                    exit(1);
+                }
+                (*nNP) = std::stoi(argv[i + 1]);
+                i++;
+            }else if (strcmp(argv[i], "-nT") == 0) {
+                if (i == argc-1){
+                    std::cout << "Insert number of threads!!!";
+                    exit(1);
+                }
+                (*nT) = std::stoi(argv[i + 1]);
+                i++;
+            }else if (strcmp(argv[i], "-dp") == 0){
+                (*run) = 1;
+            }else if (strcmp(argv[i], "-r") == 0){
+                (*run) = 2;
+            }else if (strcmp(argv[i], "-tp") == 0){
+                (*run) = 3;
+            }else if (strcmp(argv[i], "-mpi") == 0){
+                (*run) = 4;
+            } else {
+                std::cout << "Not enough or invalid arguments, please try again." << std::endl;
+                exit(1);
+            }
+        }
+    }
+
 }
 
 
