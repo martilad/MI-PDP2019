@@ -20,15 +20,24 @@ class MPIParallel : public Solver {
 
 protected:
 
+    // number of generated problems on one CPU
     int generated;
+    // number of generated task for slave process
     int mainGenerated;
+    // rank of process
     int rank;
+    // list of available slaves
     std::deque<int> slaves;
+    // message to send the problems and solutions
     int * message;
+    // size of message
     int message_size;
     int tag = 1;
     MPI_Status status;
+    // number of slaves
     int nSlaves;
+    // best score
+    int bestScore;
 
     /**
      * Generate instances to queue for threads.

@@ -13,9 +13,9 @@ MPIParallel::MPIParallel(int nThreads, int mainGenerated, int generated, int ran
             this->slaves.push_back(i);
         }
     }
-#if defined(_OPENMP)
-    omp_set_num_threads(nThreads);
-#endif
+    #if defined(_OPENMP)
+        omp_set_num_threads(nThreads);
+    #endif
 }
 
 MPIParallel::~MPIParallel() {}
@@ -29,6 +29,7 @@ void MPIParallel::solve(){
 
     if (this->rank == 0){
 
+        // Init the first solution
         this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
         this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
@@ -38,16 +39,21 @@ void MPIParallel::solve(){
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
 
+        // init queue of problems with first start problem
         std::deque<Item> * queue = new std::deque<Item>();
         queue->push_back(Item(this->workSolution, this->workSolution.nextFree(-1, 0), 1, this->bestSolution.price));
 
+        // generate some inst for process
         this->generateInstBFS(queue, this->mainGenerated);//TODO:
 
         while (!queue->empty()) {
 
+            // pop problem from queue to send to some worker
             Item tmp = queue->front();
             queue->pop_front();
 
+            // create message from Item and set the best score
+            tmp.bestScore = this->bestSolution.price;
             this->message = tmp.toMessage(this->message, this->rank);
             // sent to free slave process
             MPI_Send(this->message, this->message_size, MPI_INT, this->slaves.front(), this->tag, MPI_COMM_WORLD);
@@ -56,68 +62,67 @@ void MPIParallel::solve(){
             // if no free slave wait for some and get the solution
             if (this->slaves.empty()){
                 MPI_Recv(this->message, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag, MPI_COMM_WORLD, &this->status);
+                // save free slave worker
                 this->slaves.push_back(this->message[13]);
-                Item tmp = Item(this->message);
-                tmp.sol.printSolution();
-                std::cout<< "Get some reply from." << rank << std::endl;
+                // check get message for the best solution
+                if (this->bestSolution.price < this->message[12]){
+                    Item tmp = Item(this->message);
+                    this->bestSolution = tmp.sol;
+                }
             }
         }
 
+        // get all slaves to idle
         while (((int)this->slaves.size())!=this->nSlaves){
-            //MPI_Recv(this->message, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag, MPI_COMM_WORLD, &this->status);
-            MPI_Recv(this->message, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag, MPI_COMM_WORLD, &this->status);
+            // save free slave worker
             this->slaves.push_back(this->message[13]);
-            Item tmp = Item(this->message);
-            tmp.sol.printSolution();
-            std::cout<< "Get some reply from." << rank << std::endl;
+            // check get message for the best solution
+            if (this->bestSolution.price < this->message[12]){
+                Item tmp = Item(this->message);
+                this->bestSolution = tmp.sol;
+            }
         }
 
+        // set end flag for workers
         this->message[0] = -1;
-        for (int i=0;i<this->nSlaves;i++) MPI_Send(this->message, this->message_size, MPI_INT, i+1, this->tag, MPI_COMM_WORLD);
+        for (int i=0;i<this->nSlaves;i++) {
+            MPI_Send(this->message, this->message_size, MPI_INT, i+1, this->tag, MPI_COMM_WORLD);
+        }
 
-        std::cout << "Master: Create some work!!" <<  std::endl;
 
     }else{
-
-
         bool end = false;
         while (!end) {
+            // get message from master with work or end
             MPI_Recv(this->message, this->message_size, MPI_INT, 0, this->tag, MPI_COMM_WORLD, &this->status);
             if (message[0] == -1) {
+                // end go home
                 end = true;
             } else {
+                // there was some work do it!!
                 Item tmp = Item(this->message);
-                tmp.sol.printSolution();
+                this->bestSolution = tmp.sol;
+                this->bestScore = tmp.bestScore;
+                std::deque<Item> * slave_queue = new std::deque<Item>();
+                slave_queue->push_back(tmp);
+                // generated some problems on thread
+                this->generateInstBFS(slave_queue, this->generated);
 
-                //TODO: solve problem
+                unsigned int i=0;
+                #pragma omp parallel for private(i) schedule(dynamic)
+                for (i = 0; i< slave_queue->size();i++){
+                    this->recursionSingleThreadDFS(&((*slave_queue)[i].sol), (*slave_queue)[i].co, (*slave_queue)[i].cnt);
+                }
 
+                // send back the best
+                Item it = Item(this->bestSolution, cord(-1, -1), -1);
+                it.bestScore = this->bestScore;
+                it.toMessage(this->message, this->rank);
                 MPI_Send(this->message, this->message_size, MPI_INT, 0, this->tag, MPI_COMM_WORLD);
             }
         }
-        std::cout << "Slave: I want the work!!" << std::endl;
-
     }
-
-    /*this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
-    this->workSolution.nEmptyBefore = 0;
-    this->workSolution.nL3 = 0;
-    this->workSolution.nL4 = 0;
-
-    // init best solution
-    this->bestSolution = this->workSolution;
-    this->bestSolution.computePrice();
-
-    std::deque<Item> * queue = new std::deque<Item>();
-    queue->push_back(Item(this->workSolution, this->workSolution.nextFree(-1, 0), 1));
-
-    this->generateInstBFS(queue, this->generated);
-
-    // call the recursion
-    unsigned int i=0;
-#pragma omp parallel for private(i) schedule(dynamic)
-    for (i = 0; i< queue->size();i++){
-        this->recursionSingleThreadDFS(&((*queue)[i].sol), (*queue)[i].co, (*queue)[i].cnt);
-    }*/
+    std::cout << "End proces : " << this->rank << std::endl;
     delete[]message;
 }
 
@@ -132,7 +137,7 @@ void MPIParallel::generateInstBFS(std::deque<Item> * queue, int instCount){
             Item tmp = it;
             int ret = tmp.sol.addValueToMap(id, 0, tmp.cnt, tmp.co.x, tmp.co.y);
             if (ret != -1){
-                queue->push_back(Item(tmp.sol, tmp.sol.nextFree(tmp.co.x, tmp.co.y), tmp.cnt+1 ));//TODO: best
+                queue->push_back(Item(tmp.sol, tmp.sol.nextFree(tmp.co.x, tmp.co.y), tmp.cnt+1, it.bestScore ));
             }
         }
     }
@@ -143,15 +148,17 @@ void MPIParallel::recursionSingleThreadDFS(solution * sol, cord co, int cnt){
     sol->computePrice();
 
     // if act solution is better than best solution -> replace
-    if (sol->price > this->bestSolution.price) {
-#pragma omp critical
-        if (sol->price > this->bestSolution.price)
+    if (sol->price > this->bestScore) {
+    #pragma omp critical
+        if (sol->price > this->bestScore){
             this->bestSolution = (*sol);
+            this->bestScore = (*sol).price;
+        }
     }
 
     sol->computeActPrice();
 
-    if (sol->actPrice + helpers::eval_pol(sol->nEmptyAfter) <= this->bestSolution.price) {
+    if (sol->actPrice + helpers::eval_pol(sol->nEmptyAfter) <= this->bestScore) {
         return;
     }
 

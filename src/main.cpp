@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
         delete problem;
     }
 
-    std::cout << "Proc: " << my_rank << ". Elapsed time is " << MPI_Wtime()-t1 << " ms." << std::endl;
+    std::cout << "Proc: " << my_rank << ". Elapsed time is " << MPI_Wtime()-t1 << " s." << std::endl;
 
     /* shut down MPI */
     MPI_Finalize();
