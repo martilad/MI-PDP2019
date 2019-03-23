@@ -21,7 +21,14 @@ class MPIParallel : public Solver {
 protected:
 
     int generated;
+    int mainGenerated;
     int rank;
+    std::deque<int> slaves;
+    int * message;
+    int message_size;
+    int tag = 1;
+    MPI_Status status;
+    int nSlaves;
 
     /**
      * Generate instances to queue for threads.
@@ -42,7 +49,7 @@ protected:
 
 public:
 
-    MPIParallel(int nThreads, int generated, int rank);
+    MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess);
     virtual ~MPIParallel();
 
     /**

@@ -60,12 +60,20 @@ int main(int argc, char* argv[]) {
             problem = new TaskParallel(nT, nN);
             break;
         case 4:
-            problem = new MPIParallel(nT, nN, my_rank);
+            if (nT < 1 || nN < 0 || nNP < 0){
+                std::cout << "Specific real number of thread on one slave (-nT) ";
+                std::cout << "and positive number of generated tasks in one level (-nN).";
+                std::cout << "and specific number of task distributed between the processes. (-nNP)"<< std::endl;
+                exit(1);
+            }
+            go = true;
+            problem = new MPIParallel(nT, nNP, nN, my_rank, p);
             break;
         default:
             std::cout << "Please specific the algorithm: \"-dp\" data parallel solution;";
             std::cout << ", \"-r\" recursion with share memory (the fastest single thread implementation), ";
-            std::cout << "\"-tp\" task parallelism recursion with copying." << std::endl;
+            std::cout << "\"-tp\" task parallelism recursion with copying or" << std::endl;
+            std::cout << "\"-mpi\" for solve using MPI with distributed memory." << std::endl;
             exit(1);
     }
     if (my_rank == 0){
@@ -78,10 +86,19 @@ int main(int argc, char* argv[]) {
                 file.close();
             }
         } else {
+            std::cout << "insert problem... (or use -f FILE for file)" << std::endl;
             problem->loadProblem(std::cin);
         }
     }
-    if (go || my_rank == 0){
+    if (go && my_rank != 0){
+        problem->solve();
+        delete problem;
+    }
+    if (!go && my_rank != 0){
+        delete problem;
+    }
+    int t1 = MPI_Wtime();
+    if (my_rank == 0){
         clock_t begin = clock();
         #if defined(_OPENMP)
         double beginR = omp_get_wtime();
@@ -103,6 +120,9 @@ int main(int argc, char* argv[]) {
         #endif
         delete problem;
     }
+
+    std::cout << "Proc: " << my_rank << ". Elapsed time is " << MPI_Wtime()-t1 << " ms." << std::endl;
+
     /* shut down MPI */
     MPI_Finalize();
 }

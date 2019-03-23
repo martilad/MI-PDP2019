@@ -3,9 +3,16 @@
 //
 #include "../../headers/solvers/MPIParallel.h"
 
-MPIParallel::MPIParallel(int nThreads, int generated, int rank): Solver() {
+MPIParallel::MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess): Solver() {
     this->rank = rank;
     this->generated = generated;
+    this->mainGenerated = mainGenerated;
+    this->nSlaves = numberOfProcess-1;
+    if (rank == 0){
+        for (int i = 1; i < numberOfProcess; i++){
+            this->slaves.push_back(i);
+        }
+    }
 #if defined(_OPENMP)
     omp_set_num_threads(nThreads);
 #endif
@@ -14,8 +21,14 @@ MPIParallel::MPIParallel(int nThreads, int generated, int rank): Solver() {
 MPIParallel::~MPIParallel() {}
 
 void MPIParallel::solve(){
+
+    this->message_size = 14+this->n*this->m;
+    MPI_Bcast (&this->message_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    this->message = new int [this->message_size];
+
     if (this->rank == 0){
-        std::cout << "Master" << std::endl;
+
         this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
         this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
@@ -24,11 +37,65 @@ void MPIParallel::solve(){
         // init best solution
         this->bestSolution = this->workSolution;
         this->bestSolution.computePrice();
-        //MPI_Recv();
-        return;
+
+        std::deque<Item> * queue = new std::deque<Item>();
+        queue->push_back(Item(this->workSolution, this->workSolution.nextFree(-1, 0), 1, this->bestSolution.price));
+
+        this->generateInstBFS(queue, this->mainGenerated);//TODO:
+
+        while (!queue->empty()) {
+
+            Item tmp = queue->front();
+            queue->pop_front();
+
+            this->message = tmp.toMessage(this->message, this->rank);
+            // sent to free slave process
+            MPI_Send(this->message, this->message_size, MPI_INT, this->slaves.front(), this->tag, MPI_COMM_WORLD);
+            this->slaves.pop_front();
+
+            // if no free slave wait for some and get the solution
+            if (this->slaves.empty()){
+                MPI_Recv(this->message, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag, MPI_COMM_WORLD, &this->status);
+                this->slaves.push_back(this->message[13]);
+                Item tmp = Item(this->message);
+                tmp.sol.printSolution();
+                std::cout<< "Get some reply from." << rank << std::endl;
+            }
+        }
+
+        while (((int)this->slaves.size())!=this->nSlaves){
+            //MPI_Recv(this->message, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag, MPI_COMM_WORLD, &this->status);
+            MPI_Recv(this->message, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag, MPI_COMM_WORLD, &this->status);
+            this->slaves.push_back(this->message[13]);
+            Item tmp = Item(this->message);
+            tmp.sol.printSolution();
+            std::cout<< "Get some reply from." << rank << std::endl;
+        }
+
+        this->message[0] = -1;
+        for (int i=0;i<this->nSlaves;i++) MPI_Send(this->message, this->message_size, MPI_INT, i+1, this->tag, MPI_COMM_WORLD);
+
+        std::cout << "Master: Create some work!!" <<  std::endl;
+
     }else{
-        std::cout << "Slave" << std::endl;
-        return;
+
+
+        bool end = false;
+        while (!end) {
+            MPI_Recv(this->message, this->message_size, MPI_INT, 0, this->tag, MPI_COMM_WORLD, &this->status);
+            if (message[0] == -1) {
+                end = true;
+            } else {
+                Item tmp = Item(this->message);
+                tmp.sol.printSolution();
+
+                //TODO: solve problem
+
+                MPI_Send(this->message, this->message_size, MPI_INT, 0, this->tag, MPI_COMM_WORLD);
+            }
+        }
+        std::cout << "Slave: I want the work!!" << std::endl;
+
     }
 
     /*this->workSolution.nEmptyAfter = this->n * this->m - this->workSolution.k;
@@ -51,6 +118,7 @@ void MPIParallel::solve(){
     for (i = 0; i< queue->size();i++){
         this->recursionSingleThreadDFS(&((*queue)[i].sol), (*queue)[i].co, (*queue)[i].cnt);
     }*/
+    delete[]message;
 }
 
 void MPIParallel::generateInstBFS(std::deque<Item> * queue, int instCount){
@@ -64,7 +132,7 @@ void MPIParallel::generateInstBFS(std::deque<Item> * queue, int instCount){
             Item tmp = it;
             int ret = tmp.sol.addValueToMap(id, 0, tmp.cnt, tmp.co.x, tmp.co.y);
             if (ret != -1){
-                queue->push_back(Item(tmp.sol, tmp.sol.nextFree(tmp.co.x, tmp.co.y), tmp.cnt+1));
+                queue->push_back(Item(tmp.sol, tmp.sol.nextFree(tmp.co.x, tmp.co.y), tmp.cnt+1 ));//TODO: best
             }
         }
     }
