@@ -14,6 +14,7 @@
 #include "solver.h"
 #include "../item.h"
 #include "mpi.h"
+#include "../logger.h"
 
 
 class MPIParallel : public Solver {
@@ -39,6 +40,8 @@ protected:
     // best score
     int bestScore;
 
+    LOGGER * logger;
+
     /**
      * Generate instances to queue for threads.
      *
@@ -58,7 +61,7 @@ protected:
 
 public:
 
-    MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess);
+    MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess, LOGGER * logger);
     virtual ~MPIParallel();
 
     /**

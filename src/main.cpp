@@ -4,9 +4,11 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+
 #include "mpi.h"
 #include "../headers/solution.h"
 #include "../headers/solvers/solver.h"
@@ -17,7 +19,7 @@
 #include "../headers/helpers.h"
 #include "../headers/logger.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     char *myFile = nullptr;
     int run = 0;
     int nT = -1;
@@ -30,7 +32,7 @@ int main(int argc, char* argv[]) {
     helpers::load_arguments(&myFile, &run, &nT, &nN, &nNP, argc, argv);
 
     /* start up MPI */
-    MPI_Init( &argc, &argv );
+    MPI_Init(&argc, &argv);
 
     /* find out process rank */
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -38,13 +40,14 @@ int main(int argc, char* argv[]) {
     /* find out number of processes */
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    LOGGER  * logger = new LOGGER(my_rank, "procLog", "./", DEBUG);
+    LOGGER *logger = new LOGGER(my_rank, "procLog", "./", DEBUG);
 
-    Solver * problem;
-    switch (run){
+    Solver *problem;
+    switch (run) {
         case 1:
-            if (nT < 1 || nN < 0){
-                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nN)." << std::endl;
+            if (nT < 1 || nN < 0) {
+                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nN)."
+                          << std::endl;
                 exit(1);
             }
             go = false;
@@ -55,22 +58,23 @@ int main(int argc, char* argv[]) {
             problem = new Recursion();
             break;
         case 3:
-            if (nT < 1 || nN < 0){
-                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nN)." << std::endl;
+            if (nT < 1 || nN < 0) {
+                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nN)."
+                          << std::endl;
                 exit(1);
             }
             go = false;
             problem = new TaskParallel(nT, nN);
             break;
         case 4:
-            if (nT < 1 || nN < 0 || nNP < 0){
+            if (nT < 1 || nN < 0 || nNP < 0) {
                 std::cout << "Specific real number of thread on one slave (-nT) ";
                 std::cout << "and positive number of generated tasks in one level (-nN).";
-                std::cout << "and specific number of task distributed between the processes. (-nNP)"<< std::endl;
+                std::cout << "and specific number of task distributed between the processes. (-nNP)" << std::endl;
                 exit(1);
             }
             go = true;
-            problem = new MPIParallel(nT, nNP, nN, my_rank, p);
+            problem = new MPIParallel(nT, nNP, nN, my_rank, p, logger);
             break;
         default:
             std::cout << "Please specific the algorithm: \"-dp\" data parallel solution;";
@@ -83,12 +87,12 @@ int main(int argc, char* argv[]) {
     logger->info("Number of threads in process: " + std::to_string(nT));
     logger->info("Number of generated problems for process: " + std::to_string(nN));
     logger->info("Number of generated problems for threads in process: " + std::to_string(nNP));
-    if (my_rank == 0){
+    if (my_rank == 0) {
         // load the problem
-        if (myFile){
+        if (myFile) {
             std::ifstream file;
             file.open(myFile);
-            if (file.is_open()){
+            if (file.is_open()) {
                 problem->loadProblem(file);
                 file.close();
             }
@@ -97,40 +101,68 @@ int main(int argc, char* argv[]) {
             problem->loadProblem(std::cin);
         }
     }
-    if (go && my_rank != 0){
-        problem->solve();
-        delete problem;
-    }
-    if (!go && my_rank != 0){
-        delete problem;
-    }
-    int t1 = MPI_Wtime();
-    if (my_rank == 0){
+    if (go && my_rank != 0) {
         clock_t begin = clock();
-        #if defined(_OPENMP)
-        double beginR = omp_get_wtime();
-        #endif
-        problem->solve();
 
+
+#if defined(_OPENMP)
+        double beginR = omp_get_wtime();
+#endif
+
+        problem->solve();
         clock_t end = clock();
-        #if defined(_OPENMP)
+
+
+#if defined(_OPENMP)
         double endR = omp_get_wtime();
-        #endif
-        if (my_rank == 0){
+#endif
+
+        double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+        logger->info("Solution proc time: " + std::to_string(elapsed_secs) + " s.");
+
+#if defined(_OPENMP)
+        logger->info("Solution real time (if parralel): "+ std::to_string(endR - beginR) + " s.");
+#endif
+
+
+        delete problem;
+    }
+
+    if (!go && my_rank != 0) {
+        delete problem;
+    }
+
+    int t1 = MPI_Wtime();
+
+    if (my_rank == 0) {
+        clock_t begin = clock();
+
+
+#if defined(_OPENMP)
+        double beginR = omp_get_wtime();
+#endif
+
+        problem->solve();
+        clock_t end = clock();
+
+
+#if defined(_OPENMP)
+        double endR = omp_get_wtime();
+#endif
+        if (my_rank == 0) {
             solution best = problem->getBest();
             best.printSolution();
         }
         double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-        std::cout << "Solution proc time: "<< elapsed_secs << " s." << std::endl;
-        #if defined(_OPENMP)
+        std::cout << "Solution proc time: " << elapsed_secs << " s." << std::endl;
+
+#if defined(_OPENMP)
         std::cout << "Solution real time (if parralel): "<< endR - beginR << " s." << std::endl;
-        #endif
+#endif
         delete problem;
     }
 
-    std::cout << "Proc: " << my_rank << ". Elapsed time is " << MPI_Wtime()-t1 << " s." << std::endl;
-
-    logger->info("Elapsed time is: " + std::to_string(MPI_Wtime()-t1) + " s.");
+    logger->info("Elapsed time is: " + std::to_string(MPI_Wtime() - t1) + " s.");
     logger->info("Calling MPI_Finalize...");
     MPI_Finalize();
     logger->info("MPI_Finalize completed");

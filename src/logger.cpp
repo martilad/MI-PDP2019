@@ -24,49 +24,44 @@ void LOGGER::writeTimestamp(){
     );
     this->outfile << std::setfill('0') << std::setw(2)<< ms.count() / 3600000 % 24 << ":";
     this->outfile << std::setfill('0') << std::setw(2)<< ms.count() / 60000 % 60  <<":";
-    this->outfile << std::setfill('0') << std::setw(2)<< ms.count() / 1000 % 60 <<"."<< ms.count()%1000 << ";";
+    this->outfile << std::setfill('0') << std::setw(2)<< ms.count() / 1000 % 60 <<"."<< std::setw(3)<< ms.count()%1000 << ";";
 }
 
-void LOGGER::writeLevel(){
-    switch (this->level){
-        case INFO:
-            this->outfile << "INFO;";
-            break;
-        case ERROR:
-            this->outfile << "ERROR;";
-            break;
-        case WARN:
-            this->outfile << "WARN;";
-            break;
-        case DEBUG:
-            this->outfile << "DEBUG;";
-            break;
-        default:
-            this->outfile << "LOG ERROR -> FAIL LEVEL;";
-            break;
-    }
 
-}
 
 void LOGGER::write(std::string message){
-    this->writeTimestamp();
-    this->writeLevel();
     this->outfile << this->rank << ";" << this->random << ";" << message << std::endl;
     this->outfile.flush();
 }
 
 void LOGGER::info(std::string message){
-    if (this->level >= INFO )this->write(message);
+    if (this->level >= INFO ){
+        this->writeTimestamp();
+        this->outfile << "INFO;";
+        this->write(message);
+    }
 }
 
 void LOGGER::warn(std::string message){
-    if (this->level >= WARN )this->write(message);
+    if (this->level >= WARN ){
+        this->writeTimestamp();
+        this->outfile << "WARN;";
+        this->write(message);
+    }
 }
 
 void LOGGER::error(std::string message){
-    if (this->level >= ERROR )this->write(message);
+    if (this->level >= ERROR ){
+        this->writeTimestamp();
+        this->outfile << "ERROR;";
+        this->write(message);
+    }
 }
 
 void LOGGER::debug(std::string message){
-    if (this->level >= DEBUG )this->write(message);
+    if (this->level >= DEBUG ){
+        this->writeTimestamp();
+        this->outfile << "DEBUG;";
+        this->write(message);
+    }
 }

@@ -27,7 +27,6 @@ class LOGGER{
     int random;
     std::ofstream outfile;
     void writeTimestamp();
-    void writeLevel();
     void write(std::string message);
 
 public:
