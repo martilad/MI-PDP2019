@@ -15,6 +15,7 @@
 #include "../headers/solvers/taskParallel.h"
 #include "../headers/solvers/MPIParallel.h"
 #include "../headers/helpers.h"
+#include "../headers/logger.h"
 
 int main(int argc, char* argv[]) {
     char *myFile = nullptr;
@@ -36,6 +37,8 @@ int main(int argc, char* argv[]) {
 
     /* find out number of processes */
     MPI_Comm_size(MPI_COMM_WORLD, &p);
+
+    LOGGER  * logger = new LOGGER(my_rank, "procLog", "./", DEBUG);
 
     Solver * problem;
     switch (run){
@@ -76,6 +79,10 @@ int main(int argc, char* argv[]) {
             std::cout << "\"-mpi\" for solve using MPI with distributed memory." << std::endl;
             exit(1);
     }
+    logger->info("Number of process: " + std::to_string(p));
+    logger->info("Number of threads in process: " + std::to_string(nT));
+    logger->info("Number of generated problems for process: " + std::to_string(nN));
+    logger->info("Number of generated problems for threads in process: " + std::to_string(nNP));
     if (my_rank == 0){
         // load the problem
         if (myFile){
@@ -123,8 +130,8 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Proc: " << my_rank << ". Elapsed time is " << MPI_Wtime()-t1 << " s." << std::endl;
 
-    /* shut down MPI */
-    printf("%d: Calling MPI_Finalize...\n", my_rank);
+    logger->info("Elapsed time is: " + std::to_string(MPI_Wtime()-t1) + " s.");
+    logger->info("Calling MPI_Finalize...");
     MPI_Finalize();
-    printf("%d: MPI_Finalize completed\n", my_rank);
+    logger->info("MPI_Finalize completed");
 }
