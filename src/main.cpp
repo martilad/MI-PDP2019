@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     switch (run){
         case 1:
             if (nT < 1 || nN < 0){
-                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nIN)." << std::endl;
+                std::cout << "Specific real number of thread (-nT) or positive number of generated tasks (-nN)." << std::endl;
                 exit(1);
             }
             go = false;
@@ -124,5 +124,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Proc: " << my_rank << ". Elapsed time is " << MPI_Wtime()-t1 << " s." << std::endl;
 
     /* shut down MPI */
+    printf("%d: Calling MPI_Finalize...\n", my_rank);
     MPI_Finalize();
+    printf("%d: MPI_Finalize completed\n", my_rank);
 }
