@@ -133,7 +133,7 @@ void MPIParallel::solve() {
 
 
                 unsigned int i = 0;
-#pragma omp parallel for private(i) schedule(dynamic)
+                #pragma omp parallel for private(i) schedule(dynamic)
                 for (i = 0; i < slave_queue->size(); i++) {
                     this->recursionSingleThreadDFS(&((*slave_queue)[i].sol), (*slave_queue)[i].co,
                                                    (*slave_queue)[i].cnt);

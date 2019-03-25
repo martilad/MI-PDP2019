@@ -17,6 +17,7 @@
 #include "../logger.h"
 
 
+
 class MPIParallel : public Solver {
 
 protected:
@@ -60,7 +61,6 @@ protected:
     void recursionSingleThreadDFS(solution * sol, cord co, int cnt);
 
 public:
-
     MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess, LOGGER * logger);
     virtual ~MPIParallel();
 
