@@ -31,11 +31,21 @@ protected:
     // list of available slaves
     std::deque<int> slaves;
     // message to send the problems and solutions
-    int * message;
+    int * message_send;
+    int * message_recv;
     // size of message
     int message_size;
-    int tag = 1;
-    MPI_Status status;
+
+    int tag_problem = 1;
+    int tag_best_solution_price = 1;
+    MPI_Status status_send;
+    MPI_Status status_recv;
+
+    int send_request_complete = 0;
+    int recv_request_complete = 0;
+
+    MPI_Request request_send;
+    MPI_Request request_recv;
     // number of slaves
     int nSlaves;
     // best score

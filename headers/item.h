@@ -57,7 +57,7 @@ struct Item {
     int cnt;
     int bestScore;
 
-    int * toMessage(int * message, int rank) {
+    void toMessage(int * message, int rank) {
         message[0] = this->sol.m;
         message[1] = this->sol.n;
         message[2] = this->sol.k;
@@ -78,7 +78,6 @@ struct Item {
                 message[c++] = this->sol.ground[i][j];
             }
         }
-        return message;
     }
 };
 
