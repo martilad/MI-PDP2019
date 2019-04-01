@@ -5,24 +5,25 @@
 #ifndef MI_PDP2019_MPIPARALLEL_H
 #define MI_PDP2019_MPIPARALLEL_H
 
-
 #include <deque>
 #include <iostream>
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+#include "mpi.h"
+
 #include "solver.h"
 #include "../item.h"
-#include "mpi.h"
 #include "../logger.h"
-
 
 
 class MPIParallel : public Solver {
 
 protected:
 
+    // counter for try get best solution
     int cnt = 0;
+    // theoretic best for problem if reach end the computing
     int theoreticBest;
 
     // number of generated problems on one CPU
@@ -33,29 +34,29 @@ protected:
     int rank;
     // list of available slaves
     std::deque<int> slaves;
+
+    // size of messages
+    int messageSize;
+    // tag for sending problems and solutions
+    int tagProblem = 1;
+
     // message to send the problems and solutions
     int * messageSend;
-    int * messageRecv;
-    // size of message
-    int messageSize;
-
-    int tagProblem = 1;
-    int tagBestSolutionPrice = 1;
     MPI_Status statusSend;
-
-
+    MPI_Request requestSend;
     int sendRequestComplete = 0;
 
+    // message to receive the problems and solutions
+    int * messageRecv;
+    MPI_Status statusRecv;
+    MPI_Request requestRecv;
+    int recvRequestComplete = 0;
+
+
+    // value to broadcast the best solution for the cutting the problem
     int bestBCast;
     MPI_Request bestBCastRequest;
     int bCastRequestComplete = 0;
-
-
-    MPI_Request requestSend;
-
-    MPI_Status statusRecv;
-    int recvRequestComplete;
-    MPI_Request requestRecv;
 
     // number of slaves
     int nSlaves;
@@ -63,6 +64,7 @@ protected:
     // best score
     int bestScore;
 
+    // logger
     LOGGER * logger;
 
     /**
@@ -83,6 +85,16 @@ protected:
     void recursionSingleThreadDFS(solution * sol, cord co, int cnt);
 
 public:
+    /**
+     * Constructor.
+     *
+     * @param nThreads number of threads in every process
+     * @param mainGenerated number of generated problems on main process
+     * @param generated generated problems on each process for threads
+     * @param rank rank of the process
+     * @param numberOfProcess number of processes
+     * @param logger logger for logging (log are comment for the boost the time
+     */
     MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess, LOGGER * logger);
     virtual ~MPIParallel();
 
