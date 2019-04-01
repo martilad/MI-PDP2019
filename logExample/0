@@ -1,0 +1,42 @@
+0;1804289383;successfully init the logger
+08:55:43.217;INFO;0;1804289383;Number of process: 4
+08:55:43.217;INFO;0;1804289383;Number of threads in process: 4
+08:55:43.217;INFO;0;1804289383;Number of generated problems for process: 80
+08:55:43.217;INFO;0;1804289383;Number of generated problems for threads in process: 400
+08:55:43.217;INFO;0;1804289383;Teoretic best: 83
+08:55:43.217;INFO;0;1804289383;Generating inst for proc: 400
+08:55:43.219;INFO;0;1804289383;Generated inst: 400
+08:55:43.219;INFO;0;1804289383;Send message to slave: 1
+08:55:43.219;INFO;0;1804289383;Send.
+08:55:43.219;INFO;0;1804289383;Send message to slave: 2
+08:55:43.219;INFO;0;1804289383;Send.
+08:55:43.219;INFO;0;1804289383;Send message to slave: 3
+08:55:43.219;INFO;0;1804289383;Send.
+08:55:43.219;INFO;0;1804289383;Wait for message from slave.
+08:55:47.100;INFO;0;1804289383;Get message from: 2. Best done: 81
+08:55:47.100;INFO;0;1804289383;Broadcast the best solution: 81
+08:55:47.100;INFO;0;1804289383;Broadcasted.
+08:55:47.100;INFO;0;1804289383;Send message to slave: 2
+08:55:47.100;INFO;0;1804289383;Send.
+08:55:47.100;INFO;0;1804289383;Wait for message from slave.
+08:55:47.822;INFO;0;1804289383;Get message from: 2. Best done: 81
+08:55:47.822;INFO;0;1804289383;Send message to slave: 2
+08:55:47.822;INFO;0;1804289383;Send.
+08:55:47.822;INFO;0;1804289383;Wait for message from slave.
+08:55:47.845;INFO;0;1804289383;Get message from: 1. Best done: 83
+08:55:47.845;INFO;0;1804289383;Broadcast the best solution: 83
+08:55:47.845;INFO;0;1804289383;Broadcasted.
+08:55:47.845;INFO;0;1804289383;Reach the theoretic maximum, send end to slaves.
+08:55:47.845;INFO;0;1804289383;Wait for message from slave.
+08:55:47.846;INFO;0;1804289383;Get message from: 2. Best done: 83
+08:55:47.846;INFO;0;1804289383;Wait for message from slave.
+08:55:47.847;INFO;0;1804289383;Get message from: 3. Best done: 83
+08:55:47.847;INFO;0;1804289383;Send END message to slave: 1
+08:55:47.847;INFO;0;1804289383;Send.
+08:55:47.847;INFO;0;1804289383;Send END message to slave: 2
+08:55:47.847;INFO;0;1804289383;Send.
+08:55:47.847;INFO;0;1804289383;Send END message to slave: 3
+08:55:47.847;INFO;0;1804289383;Send.
+08:55:47.847;INFO;0;1804289383;Elapsed time is: 8.231952 s.
+08:55:47.847;INFO;0;1804289383;Calling MPI_Finalize...
+08:55:47.849;INFO;0;1804289383;MPI_Finalize completed

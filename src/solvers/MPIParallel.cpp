@@ -24,11 +24,11 @@ MPIParallel::~MPIParallel() {}
 
 void MPIParallel::solve() {
 
-    this->message_size = 14 + this->n * this->m;
-    MPI_Bcast(&this->message_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    this->messageSize = 14 + this->n * this->m;
+    MPI_Bcast(&this->messageSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    this->message_send = new int[this->message_size];
-    this->message_recv = new int[this->message_size];
+    this->messageSend = new int[this->messageSize];
+    this->messageRecv = new int[this->messageSize];
 
     if (this->rank == 0) {
         bool send = false;
@@ -37,6 +37,9 @@ void MPIParallel::solve() {
         this->workSolution.nEmptyBefore = 0;
         this->workSolution.nL3 = 0;
         this->workSolution.nL4 = 0;
+
+        this->logger->info("Teoretic best: " + std::to_string(helpers::eval_pol(this->m*this->n-this->workSolution.k)));
+        this->theoreticBest = helpers::eval_pol(this->m*this->n-this->workSolution.k);
 
         // init best solution
         this->bestSolution = this->workSolution;
@@ -57,67 +60,95 @@ void MPIParallel::solve() {
             //Item tmp = queue->back();
             //queue->pop_back();
             queue->pop_front();
-            this->logger->info("test");
 
-            if (send && !this->send_request_complete) {
-                MPI_Wait(&this->request_send, &this->status_send);
+            if (send && !this->sendRequestComplete) {
+                MPI_Wait(&this->requestSend, &this->statusSend);
             }
-            this->logger->info("test2");
 
             // create message from Item and set the best score
             tmp.bestScore = this->bestSolution.price;
-            tmp.toMessage(this->message_send, this->rank);
-            // sent to free slave process
+            tmp.toMessage(this->messageSend, this->rank);
+
             this->logger->info("Send message to slave: " + std::to_string(this->slaves.front()));
-            MPI_Isend(this->message_send, this->message_size, MPI_INT, this->slaves.front(), this->tag_problem,
-                      MPI_COMM_WORLD, &this->request_send);
+            // sent to free slave process
+            MPI_Isend(this->messageSend, this->messageSize, MPI_INT, this->slaves.front(), this->tagProblem,
+                      MPI_COMM_WORLD, &this->requestSend);
             send = true;
             this->logger->info("Send.");
             this->slaves.pop_front();
 
-            if (!this->send_request_complete) {
-                MPI_Test(&this->request_send, &this->send_request_complete, &this->status_send);
-            }
+            MPI_Test(&this->requestSend, &this->sendRequestComplete, &this->statusSend);
 
             // if no free slave wait for some and get the solution
             if (this->slaves.empty()) {
+
                 this->logger->info("Wait for message from slave.");
-                MPI_Recv(this->message_recv, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag_problem,
-                         MPI_COMM_WORLD,
-                         &this->status_recv);
-                this->logger->info("Get message from: " + std::to_string(this->message_recv[13]) + ". Best done: " +
-                                   std::to_string(this->message_recv[12]));
+
+                //MPI_Recv(this->message_recv, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag_problem,
+                 //        MPI_COMM_WORLD, &this->status_recv);
+
+                MPI_Irecv(this->messageRecv, this->messageSize, MPI_INT, MPI_ANY_SOURCE, this->tagProblem,
+                        MPI_COMM_WORLD, &this->requestRecv);
+
+                MPI_Test(&this->requestRecv, &this->recvRequestComplete, &this->statusRecv);
+
+                if (!this->recvRequestComplete) {
+                    MPI_Wait(&this->requestRecv, &this->statusRecv);
+                }
+
+                this->logger->info("Get message from: " + std::to_string(this->messageRecv[13]) + ". Best done: " +
+                                   std::to_string(this->messageRecv[12]));
                 // save free slave worker
-                this->slaves.push_back(this->message_recv[13]);
+                this->slaves.push_back(this->messageRecv[13]);
                 // check get message for the best solution
-                if (this->bestSolution.price < this->message_recv[12]) {
-                    Item tmp = Item(this->message_recv);
+                if (this->bestSolution.price < this->messageRecv[12]) {
+                    Item tmp = Item(this->messageRecv);
+
+                    this->bestBCast = tmp.sol.price;
+
+                    this->logger->info("Broadcast the best solution: " + std::to_string(this->bestBCast));
+
+                    MPI_Ibcast(&this->bestBCast, 1, MPI_INT, 0, MPI_COMM_WORLD, &this->bestBCastRequest);
+
+                    this->logger->info("Broadcasted.");
                     this->bestSolution = tmp.sol;
                 }
+            }
+            if (this->bestSolution.price == this->theoreticBest){
+                this->logger->info("Reach the theoretic maximum, send end to slaves.");
+                break;
             }
         }
 
         // get all slaves to idle
         while (((int) this->slaves.size()) != this->nSlaves) {
             this->logger->info("Wait for message from slave.");
-            MPI_Recv(this->message_recv, this->message_size, MPI_INT, MPI_ANY_SOURCE, this->tag_problem, MPI_COMM_WORLD,
-                     &this->status_recv);
-            this->logger->info("Get message from: " + std::to_string(this->message_recv[13]) + ". Best done: " +
-                               std::to_string(this->message_recv[12]));
+
+            MPI_Irecv(this->messageRecv, this->messageSize, MPI_INT, MPI_ANY_SOURCE, this->tagProblem,
+                      MPI_COMM_WORLD, &this->requestRecv);
+
+            MPI_Test(&this->requestRecv, &this->recvRequestComplete, &this->statusRecv);
+
+            if (!this->recvRequestComplete) {
+                MPI_Wait(&this->requestRecv, &this->statusRecv);
+            }
+
+            this->logger->info("Get message from: " + std::to_string(this->messageRecv[13]) + ". Best done: " +
+                               std::to_string(this->messageRecv[12]));
             // save free slave worker
-            this->slaves.push_back(this->message_recv[13]);
+            this->slaves.push_back(this->messageRecv[13]);
             // check get message for the best solution
-            if (this->bestSolution.price < this->message_recv[12]) {
-                Item tmp = Item(this->message_recv);
+            if (this->bestSolution.price < this->messageRecv[12]) {
+                Item tmp = Item(this->messageRecv);
                 this->bestSolution = tmp.sol;
             }
         }
 
         // set end flag for workers
-        this->message_send[0] = -1;
+        this->messageSend[0] = -1;
         for (int i = 0; i < this->nSlaves; i++) {
             this->logger->info("Send END message to slave: " + std::to_string(i + 1));
-            MPI_Send(this->message_send, this->message_size, MPI_INT, i + 1, this->tag_problem, MPI_COMM_WORLD);
+            MPI_Send(this->messageSend, this->messageSize, MPI_INT, i + 1, this->tagProblem, MPI_COMM_WORLD);
             this->logger->info("Send.");
         }
 
@@ -126,16 +157,16 @@ void MPIParallel::solve() {
         bool end = false;
         while (!end) {
             // get message from master with work or end
-            MPI_Recv(this->message_recv, this->message_size, MPI_INT, 0, this->tag_problem, MPI_COMM_WORLD, &this->status_recv);
+            MPI_Recv(this->messageRecv, this->messageSize, MPI_INT, 0, this->tagProblem, MPI_COMM_WORLD, &this->statusRecv);
 
-            if (message_recv[0] == -1) {
+            if (messageRecv[0] == -1) {
                 // end go home
                 this->logger->info("Get END message from master.");
                 end = true;
             } else {
-
+                cnt = 0;
                 // there was some work do it!!
-                Item tmp = Item(this->message_recv);
+                Item tmp = Item(this->messageRecv);
                 this->logger->info("Get message from master with max score: " + std::to_string(tmp.bestScore));
                 this->bestSolution = tmp.sol;
                 this->bestScore = tmp.bestScore;
@@ -158,15 +189,22 @@ void MPIParallel::solve() {
                 // send back the best
                 Item it = Item(this->bestSolution, cord(-1, -1), -1);
                 it.bestScore = this->bestScore;
-                it.toMessage(this->message_send, this->rank);
+                it.toMessage(this->messageSend, this->rank);
                 this->logger->info("Send the results to master.");
-                MPI_Send(this->message_send, this->message_size, MPI_INT, 0, this->tag_problem, MPI_COMM_WORLD);
-                this->logger->info("Send.");
+
+                MPI_Isend(this->messageSend, this->messageSize, MPI_INT, 0, this->tagProblem, MPI_COMM_WORLD, &this->requestSend);
+
+                //MPI_Send(this->message_send, this->message_size, MPI_INT, 0, this->tag_problem, MPI_COMM_WORLD);
+                MPI_Test(&this->requestSend, &this->sendRequestComplete, &this->statusSend);
+                if (!this->sendRequestComplete) {
+                    MPI_Wait(&this->requestSend, &this->statusSend);
+                }
+                this->logger->info("Send." + std::to_string(this->cnt));
             }
         }
     }
-    delete[]message_send;
-    delete[]message_recv;
+    delete[]messageSend;
+    delete[]messageRecv;
 }
 
 void MPIParallel::generateInstBFS(std::deque <Item> *queue, int instCount) {
@@ -190,9 +228,30 @@ void MPIParallel::recursionSingleThreadDFS(solution *sol, cord co, int cnt) {
 
     sol->computePrice();
 
+    #pragma omp critical
+    this->cnt++;
+    if (this->cnt % 10000 == 0){
+        #pragma omp critical
+   {
+       this->logger->info("Try to recv best solution");
+
+       MPI_Ibcast(&this->bestBCast, 1, MPI_INT, 0, MPI_COMM_WORLD, &this->bestBCastRequest);
+
+       MPI_Test(&this->bestBCastRequest, &this->bCastRequestComplete, MPI_STATUS_IGNORE);
+
+       this->logger->info("Recv bcast best solution: " + std::to_string(this->bestBCast));
+       if (!this->bCastRequestComplete) {
+           if (this->bestBCast > this->bestScore){
+               this->bestScore = this->bestBCast;
+           }
+       }
+   }
+    }
+
+
     // if act solution is better than best solution -> replace
     if (sol->price > this->bestScore) {
-#pragma omp critical
+    #pragma omp critical
         if (sol->price > this->bestScore) {
             this->bestSolution = (*sol);
             this->bestScore = (*sol).price;

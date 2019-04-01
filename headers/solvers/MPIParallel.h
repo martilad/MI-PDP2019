@@ -22,6 +22,9 @@ class MPIParallel : public Solver {
 
 protected:
 
+    int cnt = 0;
+    int theoreticBest;
+
     // number of generated problems on one CPU
     int generated;
     // number of generated task for slave process
@@ -31,23 +34,32 @@ protected:
     // list of available slaves
     std::deque<int> slaves;
     // message to send the problems and solutions
-    int * message_send;
-    int * message_recv;
+    int * messageSend;
+    int * messageRecv;
     // size of message
-    int message_size;
+    int messageSize;
 
-    int tag_problem = 1;
-    int tag_best_solution_price = 1;
-    MPI_Status status_send;
-    MPI_Status status_recv;
+    int tagProblem = 1;
+    int tagBestSolutionPrice = 1;
+    MPI_Status statusSend;
 
-    int send_request_complete = 0;
-    int recv_request_complete = 0;
 
-    MPI_Request request_send;
-    MPI_Request request_recv;
+    int sendRequestComplete = 0;
+
+    int bestBCast;
+    MPI_Request bestBCastRequest;
+    int bCastRequestComplete = 0;
+
+
+    MPI_Request requestSend;
+
+    MPI_Status statusRecv;
+    int recvRequestComplete;
+    MPI_Request requestRecv;
+
     // number of slaves
     int nSlaves;
+
     // best score
     int bestScore;
 
