@@ -10,7 +10,7 @@ LOGGER::LOGGER(int rank, std::string baseFileName, std::string path, int LEVEL){
     this->random = rand();
     this->file_name = path + std::to_string(this->rank) + baseFileName + ".log";
     this->outfile.open(this->file_name);
-    this->write("successfully init the logger");
+    this->write("successfully init the logger. Level: " + std::to_string(this->level));
 }
 
 LOGGER::~LOGGER(){

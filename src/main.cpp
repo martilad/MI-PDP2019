@@ -40,7 +40,9 @@ int main(int argc, char *argv[]) {
     /* find out number of processes */
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    LOGGER *logger = new LOGGER(my_rank, "procLog", "./", DEBUG);
+    //LOGGER *logger = new LOGGER(my_rank, "procLog", "./", ERROR);
+    //LOGGER *logger = new LOGGER(my_rank, "procLog", "./", INFO);
+    LOGGER * logger = nullptr;
 
     Solver *problem;
     switch (run) {
@@ -83,10 +85,10 @@ int main(int argc, char *argv[]) {
             std::cout << "\"-mpi\" for solve using MPI with distributed memory." << std::endl;
             exit(1);
     }
-    logger->info("Number of process: " + std::to_string(p));
-    logger->info("Number of threads in process: " + std::to_string(nT));
-    logger->info("Number of generated problems for process: " + std::to_string(nN));
-    logger->info("Number of generated problems for threads in process: " + std::to_string(nNP));
+    //logger->info("Number of process: " + std::to_string(p));
+    //logger->info("Number of threads in process: " + std::to_string(nT));
+    //logger->info("Number of generated problems for process: " + std::to_string(nN));
+    //logger->info("Number of generated problems for threads in process: " + std::to_string(nNP));
     if (my_rank == 0) {
         // load the problem
         if (myFile) {
@@ -102,26 +104,26 @@ int main(int argc, char *argv[]) {
         }
     }
     if (go && my_rank != 0) {
-        clock_t begin = clock();
+        //clock_t begin = clock();
 
 
 #if defined(_OPENMP)
-        double beginR = omp_get_wtime();
+        //double beginR = omp_get_wtime();
 #endif
 
         problem->solve();
-        clock_t end = clock();
+        //clock_t end = clock();
 
 
 #if defined(_OPENMP)
-        double endR = omp_get_wtime();
+        //double endR = omp_get_wtime();
 #endif
 
-        double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-        logger->info("Solution proc time: " + std::to_string(elapsed_secs) + " s.");
+        //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+        //logger->info("Solution proc time: " + std::to_string(elapsed_secs) + " s.");
 
 #if defined(_OPENMP)
-        logger->info("Solution real time (if parralel): "+ std::to_string(endR - beginR) + " s.");
+        //logger->info("Solution real time (if parralel): "+ std::to_string(endR - beginR) + " s.");
 #endif
 
 
@@ -162,8 +164,10 @@ int main(int argc, char *argv[]) {
         delete problem;
     }
 
-    logger->info("Elapsed time is: " + std::to_string(MPI_Wtime() - t1) + " s.");
-    logger->info("Calling MPI_Finalize...");
+    //logger->info("Elapsed time is: " + std::to_string(MPI_Wtime() - t1) + " s.");
+    std::cout << "Elapsed time on worker " << my_rank <<" is: " << MPI_Wtime() - t1 << " s." << std::endl;
+    //logger->info("Elapsed time is: " + std::to_string(MPI_Wtime() - t1) + " s.");
+    //logger->info("Calling MPI_Finalize...");
     MPI_Finalize();
-    logger->info("MPI_Finalize completed");
+    //logger->info("MPI_Finalize completed");
 }
