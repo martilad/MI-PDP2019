@@ -1,7 +1,7 @@
 #!/bin/bash
 
 startFileN=1
-endFileN=10
+endFileN=1
 
 mkdir o 2> /dev/null
 mkdir e 2> /dev/null
@@ -9,7 +9,7 @@ mkdir e 2> /dev/null
 switch="-mpi"
 
 nTb=1
-nTm=1
+nTm=30
 nTs=1
 
 nNb=20
@@ -24,8 +24,8 @@ repeat=0
 
 for ((startFileN ; startFileN <= $endFileN ; startFileN++)); do
     file=inst/pol${startFileN}.txt
-    epath="./o/$startFileN"
-    opath="./o/$startFileN"
+    epath="./e/pol${startFileN}"
+    opath="./o/pol${startFileN}"
 
     nT=$nTb
     for ((nT ; nT <= $nTm ; nT=nT+nTs)); do
@@ -42,17 +42,13 @@ for ((startFileN ; startFileN <= $endFileN ; startFileN++)); do
 					sed -i "s|#{3}|$nT|" parallel_job.sh
 					sed -i "s|#{4}|$nN|" parallel_job.sh
 					sed -i "s|#{5}|$nNP|" parallel_job.sh
-					sed -i "s|#{6}|$switch|" parallel_job.sh
-					sed -i "s|#{7}|$switch|" parallel_job.sh
-					echo "$nT - $nN - $nNP - $switch - $rep"
+					sed -i "s|#{6}|${epath}_${switch:1}_T${nT}_NT${nN}_NP${nNP}_rep${rep}|" parallel_job.sh
+					sed -i "s|#{7}|${opath}_${switch:1}_T${nT}_NT${nN}_NP${nNP}_rep${rep}|" parallel_job.sh
+					echo "$nT - $nN - $nNP - $switch - $rep - $file - ${epath}_${switch:1}_T${nT}_NT${nN}_NP${nNP}_rep${rep} - ${opath}_${switch:1}_T${nT}_NT${nN}_NP${nNP}_rep${rep}"
+					echo "RUN TO QRUN"
+					rm parallel_job.sh
     			done
     		done
     	done
     done
-
-    echo "Counter: $file"
 done
-
-# nahrazovani v souboru
-#cp parallel_job_temp.sh parallel_job.sh
-#sed -i 's/#{1}/1/' parallel_job.sh
