@@ -23,6 +23,9 @@ class MPIParallel : public Solver {
 protected:
 
     int nThreads;
+    std::deque <Item> *queue;
+    omp_lock_t writelock;
+
     // counter for try get best solution
     int cnt = 0;
     // theoretic best for problem if reach end the computing
@@ -85,6 +88,7 @@ protected:
      * @param cnt counter
      */
     void recursionSingleThreadDFS(solution * sol, cord co, int cnt);
+    void recursionSingleThreadDFSnotMPI(solution * sol, cord co, int cnt);
 
 public:
     /**

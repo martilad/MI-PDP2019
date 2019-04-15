@@ -5,6 +5,7 @@
 
 MPIParallel::MPIParallel(int nThreads, int mainGenerated, int generated, int rank, int numberOfProcess, LOGGER *logger)
         : Solver() {
+    omp_init_lock(&this->writelock);
     // the number of process
     this->rank = rank;
     this->nThreads = nThreads;
@@ -23,7 +24,9 @@ MPIParallel::MPIParallel(int nThreads, int mainGenerated, int generated, int ran
 #endif
 }
 
-MPIParallel::~MPIParallel() {}
+MPIParallel::~MPIParallel() {
+    omp_destroy_lock(&this->writelock);
+}
 
 void MPIParallel::solve() {
 
@@ -36,6 +39,7 @@ void MPIParallel::solve() {
     this->messageSend = new int[this->messageSize];
     this->messageRecv = new int[this->messageSize];
 
+    omp_set_lock(&this->writelock);
     // master process
     if (this->rank == 0) {
         #pragma omp parallel num_threads (2)
@@ -57,58 +61,49 @@ void MPIParallel::solve() {
                 this->bestSolution.computePrice();
 
                 // init queue of problems with first start problem
-                std::deque <Item> *queue = new std::deque<Item>();
-                queue->push_back(
-                        Item(this->workSolution, this->workSolution.nextFree(-1, 0), 1, this->bestSolution.price));
+                this->queue = new std::deque<Item>();
+                this->queue->push_back(Item(this->workSolution, this->workSolution.nextFree(-1, 0), 1, this->bestSolution.price));
 
                 //this->logger->info("Generating inst for proc: " + std::to_string(this->mainGenerated));
                 // generate some inst for process
-                this->generateInstBFS(queue, this->mainGenerated);
+                this->generateInstBFS(this->queue, this->mainGenerated);
+                omp_unset_lock(&this->writelock);
                 //this->logger->info("Generated inst: " + std::to_string(queue->size()));
                 // for all generated
                 while (true) {
                     Item tmp;
                     bool off = false;
-                    logger->info("sakra");
 
-#pragma omp critical
+                    #pragma omp critical
                     {
-                        logger->info("sakra1");
-                        if (queue->empty()) {
+                        if (this->queue->empty()) {
                             off = true;
+                        } else {
+                            // pop problem from queue to send to some worker
+                            tmp = this->queue->front();
+                            //Item tmp = queue->back();
+                            //queue->pop_back();
+                            this->queue->pop_front();
                         }
-                        //TOD: put the checking of the quee out the cycle and try to critical because of slaves workers
-
-                        // pop problem from queue to send to some worker
-                        tmp = queue->front();
-                        //Item tmp = queue->back();
-                        //queue->pop_back();
-                        //TOD: to save use critical because thread
-
-                        queue->pop_front();
                     }
-                    logger->info("sakra2");
                     if (off)break;
                     // wait for free buffer need send message, send flag for start test
                     if (send && !this->sendRequestComplete) {
                         MPI_Wait(&this->requestSend, &this->statusSend);
                     }
-                    logger->info("sakra3");
                     // create message from Item and set the best score
-                    //TOD: to save use critical critical nedd touch the best
-#pragma omp critical
+
+                    #pragma omp critical
                     {
                         tmp.bestScore = this->bestSolution.price;
                         tmp.toMessage(this->messageSend, this->rank);
                     }
-                    logger->info("sakra4");
 
                     //this->logger->info("Send message to slave: " + std::to_string(this->slaves.front()));
                     // sent to free slave process
                     MPI_Isend(this->messageSend, this->messageSize, MPI_INT, this->slaves.front(), this->tagProblem,
                               MPI_COMM_WORLD, &this->requestSend);
                     send = true;
-                    logger->info("sakra5");
                     //this->logger->info("Send.");
                     this->slaves.pop_front();
 
@@ -117,26 +112,21 @@ void MPIParallel::solve() {
 
                     // if no free slave wait for some and get the solution
                     if (this->slaves.empty()) {
-                        logger->info("sakra6");
                         //this->logger->info("Wait for message from slave.");
 
                         MPI_Irecv(this->messageRecv, this->messageSize, MPI_INT, MPI_ANY_SOURCE, this->tagProblem,
                                   MPI_COMM_WORLD, &this->requestRecv);
-                        logger->info("sakra6.1");
                         MPI_Test(&this->requestRecv, &this->recvRequestComplete, &this->statusRecv);
-                        logger->info("sakra6.2");
                         if (!this->recvRequestComplete) {
                             MPI_Wait(&this->requestRecv, &this->statusRecv);
                         }
-                        logger->info("sakra7");
                         //this->logger->info("Get message from: " + std::to_string(this->messageRecv[13]) + ". Best done: " +
                         //                  std::to_string(this->messageRecv[12]));
                         // save free slave worker
                         this->slaves.push_back(this->messageRecv[13]);
                         // check get message for the best solution
-                        logger->info("sakra7");
                         if (this->bestSolution.price < this->messageRecv[12]) {
-#pragma omp critical
+                            #pragma omp critical
                             {
                                 if (this->bestSolution.price < this->messageRecv[12]) {
                                     Item tmp = Item(this->messageRecv);
@@ -144,13 +134,12 @@ void MPIParallel::solve() {
                                     this->bestBCast = tmp.sol.price;
 
                                     //this->logger->info("Broadcast the best solution: " + std::to_string(this->bestBCast));
-                                    logger->info("sakra8");
+
                                     // broadcast new best solution to workers
                                     MPI_Ibcast(&this->bestBCast, 1, MPI_INT, 0, MPI_COMM_WORLD,
                                                &this->bestBCastRequest);
 
                                     //this->logger->info("Broadcasted.");
-                                    //TODO: to save use critical
                                     this->bestSolution = tmp.sol;
                                 }
                             }
@@ -183,7 +172,7 @@ void MPIParallel::solve() {
                     // check get message for the best solution
 
                     if (this->bestSolution.price < this->messageRecv[12]) {
-#pragma omp critical
+                    #pragma omp critical
                         {
                             if (this->bestSolution.price < this->messageRecv[12]) {
                                 Item tmp = Item(this->messageRecv);
@@ -195,7 +184,6 @@ void MPIParallel::solve() {
                                 MPI_Ibcast(&this->bestBCast, 1, MPI_INT, 0, MPI_COMM_WORLD, &this->bestBCastRequest);
 
                                 //this->logger->info("Broadcasted.");
-                                //TODO: to save use critical
 
                                 this->bestSolution = tmp.sol;
                             }
@@ -211,26 +199,52 @@ void MPIParallel::solve() {
                     //this->logger->info("Send.");
                 }
             } else {
-                //TODO: drop from queue and solving
-#pragma omp critical
-                std::cout << "Ja jsem vlakno " << omp_get_thread_num() << "  z " << omp_get_num_threads()
-                          << " spim a nemam co delat" << std::endl;
+                //drop from queue and solving
+                omp_set_lock(&this->writelock);
+                if (this->nThreads > 1) {
 
-                // call the recursion
-                unsigned int i = 0;
-#pragma omp parallel for private(i) schedule(dynamic) num_threads(this->nThreads)
-                for (i = 0; i < 20; i++) {
-#pragma omp critical
-                    std::cout << "Ja jsem vlakno sss " << std::this_thread::get_id() << "  i " << i << std::endl;
+                    Item tmp;
+                    bool off = false;
+                    while(true){
+                        #pragma omp critical
+                        {
+                            if (this->queue->empty()) {
+                                off = true;
+                            } else {
+                                //pop problem from queue to send to some worker
+                                tmp = this->queue->front();
+                                //Item tmp = queue->back();
+                                //queue->pop_back();
+                                this->queue->pop_front();
+                            }
+                        }
+                        if (off)break;
+
+                        // queue for problems in slave
+                        std::deque <Item> *slave_queue = new std::deque<Item>();
+                        slave_queue->push_back(tmp);
+                        //this->logger->info("Generating inst for threads on proc: " + std::to_string(this->generated));
+                        // generated some problems on thread
+                        this->generateInstBFS(slave_queue, this->generated);
+                        //this->logger->info("Generated inst: " + std::to_string(slave_queue->size()));
+
+                        // start threads in slave
+                        unsigned int i = 0;
+                        #pragma omp parallel for private(i) schedule(dynamic) num_threads (this->nThreads-1)
+                        for (i = 0; i < slave_queue->size(); i++) {
+                            this->recursionSingleThreadDFSnotMPI(&((*slave_queue)[i].sol), (*slave_queue)[i].co,
+                                                           (*slave_queue)[i].cnt);
+                        }
+                    }
                 }
-
             }
         }
     } else {
         bool end = false;
         while (!end) {
             // get message from master with work or end
-            MPI_Recv(this->messageRecv, this->messageSize, MPI_INT, 0, this->tagProblem, MPI_COMM_WORLD, &this->statusRecv);
+            MPI_Recv(this->messageRecv, this->messageSize, MPI_INT, 0, this->tagProblem, MPI_COMM_WORLD,
+                     &this->statusRecv);
 
             if (messageRecv[0] == -1) {
                 // end go home
@@ -241,8 +255,10 @@ void MPIParallel::solve() {
                 // there was some work do it!!
                 Item tmp = Item(this->messageRecv);
                 //this->logger->info("Get message from master with max score: " + std::to_string(tmp.bestScore));
-                this->bestSolution = tmp.sol;
-                this->bestScore = tmp.bestScore;
+                this->
+                        bestSolution = tmp.sol;
+                this->
+                        bestScore = tmp.bestScore;
                 // queue for problems in slave
                 std::deque <Item> *slave_queue = new std::deque<Item>();
                 slave_queue->push_back(tmp);
@@ -257,8 +273,7 @@ void MPIParallel::solve() {
                 unsigned int i = 0;
                 #pragma omp parallel for private(i) schedule(dynamic)
                 for (i = 0; i < slave_queue->size(); i++) {
-                    this->recursionSingleThreadDFS(&((*slave_queue)[i].sol), (*slave_queue)[i].co,
-                                                   (*slave_queue)[i].cnt);
+                    this->recursionSingleThreadDFS(&((*slave_queue)[i].sol), (*slave_queue)[i].co, (*slave_queue)[i].cnt);
                 }
                 //this->logger->info("The problem solved.");
                 // send back the best
@@ -268,7 +283,8 @@ void MPIParallel::solve() {
                 // send results back
                 //this->logger->info("Send the results to master.");
 
-                MPI_Isend(this->messageSend, this->messageSize, MPI_INT, 0, this->tagProblem, MPI_COMM_WORLD, &this->requestSend);
+                MPI_Isend(this->messageSend, this->messageSize, MPI_INT, 0, this->tagProblem, MPI_COMM_WORLD,
+                          &this->requestSend);
 
                 //MPI_Send(this->message_send, this->message_size, MPI_INT, 0, this->tag_problem, MPI_COMM_WORLD);
                 MPI_Test(&this->requestSend, &this->sendRequestComplete, &this->statusSend);
@@ -280,8 +296,10 @@ void MPIParallel::solve() {
         }
     }
     // free messages buffers
-    delete[]messageSend;
-    delete[]messageRecv;
+    delete[]
+            messageSend;
+    delete[]
+            messageRecv;
 }
 
 void MPIParallel::generateInstBFS(std::deque <Item> *queue, int instCount) {
@@ -308,29 +326,29 @@ void MPIParallel::recursionSingleThreadDFS(solution *sol, cord co, int cnt) {
     // counter for check the broad casted best solution
     #pragma omp critical
     this->cnt++;
-    if (this->cnt % 10000 == 0){
+    if (this->cnt % 10000 == 0) {
         #pragma omp critical
-   {
-       //this->logger->info("Try to recv best solution");
+        {
+            //this->logger->info("Try to recv best solution");
 
-       MPI_Ibcast(&this->bestBCast, 1, MPI_INT, 0, MPI_COMM_WORLD, &this->bestBCastRequest);
+            MPI_Ibcast(&this->bestBCast, 1, MPI_INT, 0, MPI_COMM_WORLD, &this->bestBCastRequest);
 
-       MPI_Test(&this->bestBCastRequest, &this->bCastRequestComplete, MPI_STATUS_IGNORE);
+            MPI_Test(&this->bestBCastRequest, &this->bCastRequestComplete, MPI_STATUS_IGNORE);
 
-       //this->logger->info("Recv bcast best solution: " + std::to_string(this->bestBCast));
-       // if the best -> set new
-       if (!this->bCastRequestComplete) {
-           if (this->bestBCast > this->bestScore){
-               this->bestScore = this->bestBCast;
-           }
-       }
-   }
+            //this->logger->info("Recv bcast best solution: " + std::to_string(this->bestBCast));
+            // if the best -> set new
+            if (!this->bCastRequestComplete) {
+                if (this->bestBCast > this->bestScore) {
+                    this->bestScore = this->bestBCast;
+                }
+            }
+        }
     }
 
 
     // if act solution is better than best solution -> replace
     if (sol->price > this->bestScore) {
-    #pragma omp critical
+        #pragma omp critical
         if (sol->price > this->bestScore) {
             this->bestSolution = (*sol);
             this->bestScore = (*sol).price;
@@ -355,6 +373,39 @@ void MPIParallel::recursionSingleThreadDFS(solution *sol, cord co, int cnt) {
         }
 
         this->recursionSingleThreadDFS(sol, sol->nextFree(co.x, co.y), cnt + 1);
+
+        ret = sol->addValueToMap(id, cnt, 0, co.x, co.y);
+    }
+}
+
+
+void MPIParallel::recursionSingleThreadDFSnotMPI(solution * sol, cord co, int cnt){
+    sol->computePrice();
+    // if act solution is better than best solution -> replace
+    if (sol->price > this->bestSolution.price) {
+        #pragma omp critical
+        if (sol->price > this->bestSolution.price){
+            this->bestSolution = (*sol);
+            this->bestScore = (*sol).price;
+        }
+    }
+    sol->computeActPrice();
+
+    if (sol->actPrice + helpers::eval_pol(sol->nEmptyAfter) <= this->bestSolution.price) {
+        return;
+    }
+
+    if (co.x == -1 || co.y == -1 || co.y == this->m - 1) return;
+
+    for (int id = l41; id < empty + 1; id++) {
+
+        //add to map
+        int ret = sol->addValueToMap(id, 0, cnt, co.x, co.y);
+        if (ret == -1) {
+            continue;
+        }
+
+        this->recursionSingleThreadDFSnotMPI(sol, sol->nextFree(co.x, co.y), cnt + 1);
 
         ret = sol->addValueToMap(id, cnt, 0, co.x, co.y);
     }
