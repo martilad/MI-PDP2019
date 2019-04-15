@@ -13,6 +13,10 @@
  */
 struct Item {
 
+    Item(){
+
+    }
+
     Item(solution sol, cord co, int cnt) {
         this->sol = sol;
         this->co = co;

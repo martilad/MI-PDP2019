@@ -13,6 +13,7 @@
 #include "mpi.h"
 
 #include "solver.h"
+#include <thread>
 #include "../item.h"
 #include "../logger.h"
 
@@ -21,6 +22,7 @@ class MPIParallel : public Solver {
 
 protected:
 
+    int nThreads;
     // counter for try get best solution
     int cnt = 0;
     // theoretic best for problem if reach end the computing

@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
     int p;
     bool go = true;
 
+    omp_set_nested(1);
+
     helpers::load_arguments(&myFile, &run, &nT, &nN, &nNP, argc, argv);
 
     /* start up MPI */
@@ -41,8 +43,8 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
     //LOGGER *logger = new LOGGER(my_rank, "procLog", "./", ERROR);
-    //LOGGER *logger = new LOGGER(my_rank, "procLog", "./", INFO);
-    LOGGER * logger = nullptr;
+    LOGGER *logger = new LOGGER(my_rank, "procLog", "./", INFO);
+    //LOGGER * logger = nullptr;
 
     Solver *problem;
     switch (run) {
