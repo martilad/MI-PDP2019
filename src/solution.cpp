@@ -18,6 +18,7 @@ void solution::printSolution() {
     for (auto &cord : notCords) {
         std::cout << cord.x << " " << cord.y << std::endl;
     }
+
     for (int i = 0; i < this->m; i++) {
         for (int j = 0; j < this->n - 1; j++) {
             std::cout << std::setw(PRINT_NUMBERS) << std::setfill(' ')
