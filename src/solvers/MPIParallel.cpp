@@ -29,7 +29,6 @@ MPIParallel::~MPIParallel() {
 }
 
 void MPIParallel::solve() {
-
     // compute size of message to allocate
     this->messageSize = 14 + this->n * this->m;
     // broadcast the size to slaves - only master load the data file
@@ -41,6 +40,7 @@ void MPIParallel::solve() {
 
     omp_set_lock(&this->writelock);
     // master process
+
     if (this->rank == 0) {
         #pragma omp parallel num_threads (2)
         {
@@ -255,10 +255,8 @@ void MPIParallel::solve() {
                 // there was some work do it!!
                 Item tmp = Item(this->messageRecv);
                 //this->logger->info("Get message from master with max score: " + std::to_string(tmp.bestScore));
-                this->
-                        bestSolution = tmp.sol;
-                this->
-                        bestScore = tmp.bestScore;
+                this->bestSolution = tmp.sol;
+                this->bestScore = tmp.bestScore;
                 // queue for problems in slave
                 std::deque <Item> *slave_queue = new std::deque<Item>();
                 slave_queue->push_back(tmp);
