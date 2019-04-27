@@ -1,4 +1,36 @@
 \documentclass[]{article}
+\usepackage[utf8]{inputenc} % LaTeX source encoded as UTF-8
+
+\usepackage{graphicx} %graphics files inclusion
+
+\usepackage{dirtree} %directory tree visualisation
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{multirow}
+\usepackage{mathtools}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{todonotes}
+\usepackage{enumitem}
+\usepackage{lscape}
+
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{breaklinks=true}
+\urlstyle{same}
+\usepackage{cite}
+
+\usepackage[czech]{babel}
+\floatname{algorithm}{Algoritmus}
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+
+\newcommand\grsize{0.95}
+
+\raggedbottom
+\clubpenalty 10000
+\widowpenalty 10000
+
 \oddsidemargin=-5mm
 \evensidemargin=-5mm\marginparwidth=.08in \marginparsep=.01in
 \marginparpush=5pt\topmargin=-15mm\headheight=12pt
@@ -11,7 +43,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{amsmath} % Equations
-    \usepackage{amssymb} % Equations
+\usepackage{amssymb} % Equations
 
 \begin{document}
 \begin{center}
@@ -31,10 +63,11 @@ Problém, který jsme měli v ráncí semestrálního projektu řešit se týkal
 $m$, $n$ = rozměry obdélníkové mřížky $R[1..m,1..n]$, skládající se z $m$ x $n$ políček.
 Dlaždice dvou tvarů L3 a L4, viz obrázek níže \ref{obr1}.
 
-\begin{center}
- \includegraphics{ll.png}
- \label{obr1}
-\end{center}
+  \begin{figure}[H]\centering
+	\includegraphics[width=0.1\textwidth]{img/ll.png}
+ 	\label{obr1}
+ \end{figure}
+
 
 \noindent
 $k <m*n $ = počet zakázaných políček v mřížce $R$.
@@ -46,10 +79,10 @@ $D[1..k]$ = pole souřadnic $k$ zakázaných políček náhodně rozmístěných
 Pro mřížku $R$ se zakázanými políčky danými polem $D$ najděte \textbf{pokrytí}  dlaždicemi L3 a L4 (viz obrázek \ref{obr1}) \textbf{s~maximální cenou}.
 Dlaždice lze \textbf{pravoúhle otáčet} a \textbf{obracet} (viz obrázek \ref{obr2}).
 
-\begin{center}
-    \includegraphics{l2.png}
-     \label{obr2}
-    \end{center}
+    \begin{figure}[H]\centering
+	\includegraphics[width=0.2\textwidth]{img/l2.png}
+ 	\label{obr2}
+ \end{figure}
   
  \noindent 
 Všechna možná otočení a obrácení dlaždice L3.
@@ -66,11 +99,12 @@ $$ 2 * \text{počet dlaždic tvaru L3} + 3 * \text{počet dlaždic tvaru L4} - 6
 \noindent
 Popis pokrytí mřížky $R$, např. $(m \cdot n)$ - maticí identifikátorů, kde každá dlaždice je jednoznačně určena políčky 
 s unikátním ID $>=1$, nepokrytá políčka jsou prázdná a zakázaná jsou reprezentovaná znakem 'Z'. 
+    
+\begin{figure}[H]\centering
+	\includegraphics[width=0.15\textwidth]{img/l-example.jpg}
+ 	\label{obr3}
+ \end{figure}
 
-\begin{center}
-    \includegraphics{l-example.jpg}
-     \label{obr3}
-    \end{center}
     
     \noindent
 Mřížka R o rozměrech $10$ x $5$ políček s $3$ zakázanými políčky pokrytá dlaždicemi.
@@ -170,40 +204,92 @@ Zde uvedu naměřené výsledky ze spuštěných experimentů a výpočetním kl
 
 \subsection{Závislost výpočetního času na počtu generovaných tasků jeden výpočetní uzel}
 
-Jak je videt na grafech níže je tento problém velice datově závislý a čas velice ovlivní a počet vygenerovaných instancí a to ne v malé míře. Tento test byl prováděn na jednom vypočetním uzlu na 20 jádrech. V tomto případě jsem zde očekával nějakou závislost, ale časy by nejspíš rostly až kdyby generovaní tasků bralo velkou část času, což se děje spíše až uz sta tisíců.
+Jak je vidět na grafech níže je tento problém velice datově závislý. Na grafu \ref{a:nn20t} je závislost počtu generovaných instancí na jednom CPU na výpočetní čas. V grafu není vidět žádná závislost a vypočetní čas se pohybyje ve velkém rozsahu. Tento test byl prováděn na jednom vypočetním uzlu na 20 jádrech. V tomto případě jsem zde očekával nějakou závislost, ale časy by nejspíš rostly až kdyby generovaní tasků bralo velkou část času, což se děje spíše až uz sta tisíců. V tomto případě tak počáteční vygenerování rozložení určovalo jak rychle dojde k prořezání.
+
+Pro další testy se u jednotlivých instancí budu snažit "netrefit" peaky, ale tak aby algoritmus běžel co nejrychleji.
 
 
-\begin{center}
-    \includegraphics[scale=0.44]{nN.png}
-    
-     \label{obr1.1}
-     
-    \end{center}
-
+\begin{figure}[H]\centering
+	\includegraphics[width=1\textwidth]{img/nN20T}
+ 	\caption{Závislost počtu vygenerovaných počátečních konfigurací pomocí BFS pro datový paralelismus na jednom procesoru}\label{a:nn20t}
+ \end{figure}
 
 \subsection{Závislost výpočetního času na počtu generovaných tásků pro MPI}
+Na grafu \ref{a:nnP20t} je již závislost patrnější a generování rozložení pro jednotlivé procesy je dobré co nejvíc minimalizovat. Tedy snížit počet komunikací po síti a nechat počítat na jednotlivých procesorech. Test byl prváděn na procesorech o 20 jádrech. Výsledky by možná byly odlišné při velkém počtu uzlů s méně jádry. Pro další testy držím tedy počet generovaných tasků na nízkém čísle.
+
+\begin{figure}[H]\centering
+	\includegraphics[width=1\textwidth]{img/nNP60T}
+ 	\caption{Závislost počtu vygenerovaných počátečních konfigurací pomocí BFS pro datový paralelismus na jednom procesoru}\label{a:nnP20t}
+ \end{figure}
+
 
 \subsection{Závislost výpočetního času na počtu vypočetních jader na jednom výpočetním uzlu}
 
+Dálé jsem měříl algoritmus na jednom procesoru a zkoušel zvyšovat počet výpočetních jader. Na grafu \ref{a:dpp} je vidět klesající výpočetní čas s počtem jader, ale opět je to velice datově závislé. Také je na grafu paralelní zrychlení vidět superlineární zrychlení, které nastavá právě díky prořezávání, které proběhne optimálněji a výpočet se ukončí rychle.
+ 
+ 	\begin{figure}[H]
+	\centering
+    \begin{minipage}[c]{0.49\textwidth}
+        \centering\includegraphics[width=\textwidth]{img/nTdp} 
+    \end{minipage}
+    \begin{minipage}[c]{0.49\textwidth}
+        \centering \includegraphics[width=\textwidth]{img/parralelEfectivitydp} 
+    \end{minipage}
+    \\
+   \caption{Na levém je obrázek výpočetního času na počtu jader. Na právém je efektivita.}\label{a:dpp}
+    \end{figure}
+    
+\begin{figure}[H]\centering
+	\includegraphics[width=0.8\textwidth]{img/parralelFastdp}
+ 	\caption{Na obrázku je graf paralelního zrychlení}\label{a:pfdp}
+ \end{figure}
+
+
 \subsection{Závislost výpočetního času na počtu vypočetních jader v klusteru}
+
+V klusteru jsem díky pracujícímu masterovi testoval konfiguraci i pro 2 počítače v klastru a i pro 3. Je jasně patrné, že při 3 vypočetních uzlech se podařilo dosáhnout lepších časů i díky tomu, že v klusteru bylo k dispozici o 20 více jader.
+
+\begin{figure}[H]
+	\centering
+    \begin{minipage}[c]{0.49\textwidth}
+        \centering\includegraphics[width=\textwidth]{img/nTmpi2} 
+    \end{minipage}
+    \begin{minipage}[c]{0.49\textwidth}
+        \centering \includegraphics[width=\textwidth]{img/nTmpi3} 
+    \end{minipage}
+    \\
+   \caption{Na levém je obrázek výpočetního času na počtu jader pro dva počítače v klusteru. Na právém je stejný graf pro 3 počítače v klusteru.}\label{a:mpii}
+    \end{figure}
+    
+    
+Dále jsem z naměřených dat udělal grafy pro paralelní zrychlení a efektivitu, kterou jsem udělal pouze pro 3 vypočetní uzly. Na grafu níže \ref{a:pfmpi2} je graf paralelního zrychlení pro dva uzly. Při porovnání s grafem \ref{a:pfdp} je tento graf o poznání horší. Toto zpomalení je způsobeno komunikací mezi uzly a nemožností práce nad jednou sdílenou pamětí. Později bude pak dobré porovnat tento graf pro tři výpočetní uzly, který je uveden níže, kde očekávám lepší výsledek.
+
+
+\begin{figure}[H]\centering
+	\includegraphics[width=0.68\textwidth]{img/parralelFastmpi2}
+ 	\caption{Na obrázku je graf paralelního zrychlení}\label{a:pfmpi2}
+ \end{figure}
+ 
+ Na grafu \ref{a:pfmpi3} je vidět paralelní zrychlení pro klastr se třemi výpočetnímy uzly a maximálním počtem 60 jader. Je vidět, že zrychlení pro instance 14 a 15 není takové, protože zde kvůli zakázaným políčkům není tak jednoduché najít optimální řešení nebo prořezávat, naopak pro prázdnou instanci 13 se prořezaní někdy podařilo což vedlo k super lineárnímu zrychlení.
+ 
+ \begin{figure}[H]\centering
+	\includegraphics[width=0.68\textwidth]{img/parralelFastmpi3}
+ 	\caption{Na obrázku je graf paralelního zrychlení}\label{a:pfmpi3}
+ \end{figure}
+
+Na posledním obrázku \ref{a:eempi3} je vidět efektivita v závislsti na výpočetních jádrech. Graf koresponduje s paralelním zrychlení a jsou zde vidět dva peaky efektivity výšší než 1 přeně, kde došlo k superlineánímu paralelnímu zrychlení.
+ \begin{figure}[H]\centering
+	\includegraphics[width=0.7\textwidth]{img/parralelEfectivitympi3}
+ 	\caption{Na obrázku je graf paralelního zrychlení}\label{a:eempi3}
+ \end{figure}
 
 \subsection{Analýza a hodnocení}
 
+Paralelní algoritmus pro jeden procesor s datovým paralelismem funguje velice dobře. Z výsledků MPI programu je vidět, že by implementace mohla být určitě vylepšena ve více ohledech. První úzké místo je broadcastování zlepšujícího řešení, kde kontrola i četnost tohoto volání jde řídit. Dále zlepšit posílání jednotlivých úloh, kde by se nemusel posílat celý grid a neprovádět pokáždé serializaci, ale zefektivnit komunikaci. Dále také implementace na vláknech mastera, kterou jsem sice provedl, ale jednotlivá vlákna trávila příliž času v kritických sekcí, což bych v dalších pokusech omezil. 
 
-Analyza a hodnoceni vlastnosti paralelniho programu, zvlaste jeho efektivnosti a skalovatelnosti, pripadne popis zjisteneho superlinearniho zrychleni.
+Škálovatelnost algoritmu je možná v mezích, kdy ještě BFS pro generování tasků bude časově přijatelné k času řešení celého problému. Podle naměřených výsledků bych odhadoval, že lze problém dobře škálovat, protože lze velice rychle vygenerovat velký počet tasků na začátku a z měření se ukázalo, že pro počet uzlů není tak důležité vytvořit více tásků. Dále škálovatelnost také může výrazně ovlivnit komunikace přes master uzel, kdy by již nestačil odbavovat komunikaci. Toto by šlo vyřešit celkovou decentralizací algoritmu.
 
-Škálovatelnost algoritmu je možná v mezích, kdy ještě BFS pro generování tasků bude časově přijatelné k času řešení celého problému. Podle naměřených výsledků bych odhadoval, že lze problém dobře škálovat, protože lze velice rychle vygenerovat velký počet tasků na začátku, ale implemetace algoritmu v MPI by musela být změněna na nějakou, která bude efektivněji využívat síť. V mé implemetaci posílám pokaždé celé zadaní.
-
-\begin{enumerate}
-\item Zvolte tri instance problemu s takovou velikosti vstupnich dat, pro ktere ma sekvencni 
-algoritmus casovou slozitost kolem 5, 10 a 15 minut.
-Pro mereni cas potrebny na cteni dat z disku a ulozeni na disk neuvazujte a zakomentujte
-ladici tisky, logy, zpravy a vystupy.
-\item Merte paralelni cas pri pouziti $i=2,\cdot,60$ vypocetnich jader na siti Ethernet.
-\item Tabulkova a pripadne graficky zpracovan0 namerene hodnoty casove slozitosti měernych instanci behu programu s popisem instanci dat. Z namerenych dat sestavte grafy zrychleni $S(n,p)$. 
-\item 
-
-\end{enumerate}
+Celý problém byl s velkým větvením stromu a také velice datové závislý, kde rychlost velmi ovlivnilo jen počáteční generovaní rozložení. Dobrá trefa v tomto generování mohla umožnit témeř okamžité prořezání a superlineární zrychlení, protože se již zbytek stromu nemusel procházet, zatímco při řešení na jednom vlákně bylo řešení v procházení stromu deterministický a prořezání proběhlo vždy stejně.
 
 \section{Závěr}
 
